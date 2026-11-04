@@ -1,0 +1,13 @@
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import App from './App'
+import { TreeProvider } from './store/TreeStore'
+import './styles.css'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <TreeProvider>
+      <App />
+    </TreeProvider>
+  </StrictMode>,
+)
