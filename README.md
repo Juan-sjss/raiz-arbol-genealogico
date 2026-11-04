@@ -1,6 +1,6 @@
 # 🌳 Raíz
 
-[![Android APK](https://github.com/ju-pa-leguizamon/raiz-arbol-genealogico/actions/workflows/android.yml/badge.svg)](https://github.com/ju-pa-leguizamon/raiz-arbol-genealogico/actions/workflows/android.yml)
+[![Android APK](https://github.com/Juan-sjss/raiz-arbol-genealogico/actions/workflows/android.yml/badge.svg)](https://github.com/Juan-sjss/raiz-arbol-genealogico/actions/workflows/android.yml)
 
 **Tu árbol genealógico, en tu bolsillo.**
 
