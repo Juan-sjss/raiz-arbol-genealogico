@@ -10,11 +10,19 @@ import {
   XIcon,
 } from './Icons'
 
+export type ExportFormat = 'json' | 'jpeg' | 'png' | 'pdf'
+
 interface MenuSheetProps {
   open: boolean
   personCount: number
   saveState: 'saved' | 'error'
   theme: 'light' | 'dark'
+  exportFormat: ExportFormat
+  onExportFormatChange: (format: ExportFormat) => void
+  exportMultiPage: boolean
+  onExportMultiPageChange: (value: boolean) => void
+  exporting: boolean
+  exportProgress: string | null
   onToggleTheme: () => void
   onExport: () => void
   onImport: () => void
@@ -28,6 +36,12 @@ export function MenuSheet({
   personCount,
   saveState,
   theme,
+  exportFormat,
+  onExportFormatChange,
+  exportMultiPage,
+  onExportMultiPageChange,
+  exporting,
+  exportProgress,
   onToggleTheme,
   onExport,
   onImport,
@@ -61,16 +75,53 @@ export function MenuSheet({
         <div className="drawer-body">
           <section className="menu-section">
             <h3>Respaldo</h3>
-            <button type="button" className="menu-item" onClick={onExport}>
+            <div className="field" style={{ margin: '0 0 10px' }}>
+              <span>Formato de exportación</span>
+              <select
+                value={exportFormat}
+                onChange={(event) => onExportFormatChange(event.target.value as ExportFormat)}
+                disabled={exporting}
+              >
+                <option value="json">JSON (respaldo)</option>
+                <option value="jpeg">JPEG (imagen)</option>
+                <option value="png">PNG (imagen)</option>
+                <option value="pdf">PDF (documento)</option>
+              </select>
+            </div>
+            {exportFormat === 'pdf' ? (
+              <label className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, margin: '0 0 10px' }}>
+                <input
+                  type="checkbox"
+                  checked={exportMultiPage}
+                  onChange={(event) => onExportMultiPageChange(event.target.checked)}
+                  disabled={exporting}
+                />
+                <span>Dividir en varias páginas</span>
+              </label>
+            ) : null}
+            <button type="button" className="menu-item" onClick={onExport} disabled={exporting}>
               <span className="menu-icon">
                 <DownloadIcon />
               </span>
               <span>
-                <strong>Exportar respaldo</strong>
-                <small>Archivo JSON para guardar o compartir</small>
+                <strong>{exporting ? 'Exportando…' : 'Exportar'}</strong>
+                <small>
+                  {exporting
+                    ? exportProgress ?? 'Preparando…'
+                    : exportFormat === 'json'
+                      ? 'Archivo JSON para guardar o compartir'
+                      : exportFormat === 'pdf'
+                        ? 'Documento PDF del árbol completo'
+                        : 'Imagen del árbol completo'}
+                </small>
               </span>
             </button>
-            <button type="button" className="menu-item" onClick={onImport}>
+            {exporting ? (
+              <div className="export-progress" aria-live="polite">
+                <div className="export-progress-bar" />
+              </div>
+            ) : null}
+            <button type="button" className="menu-item" onClick={onImport} disabled={exporting}>
               <span className="menu-icon">
                 <UploadIcon />
               </span>
