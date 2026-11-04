@@ -1,12 +1,17 @@
-import type { Person, Relationship, Sex, TreeData } from '../types'
+import type { Person, Pet, PetSpecies, Relationship, Sex, TreeData } from '../types'
 import { newId } from './id'
 
 export const STORAGE_KEY = 'raiz.tree.v1'
 
-const SEXES: Sex[] = ['male', 'female', 'unknown']
+const PET_SPECIES: PetSpecies[] = ['dog', 'cat', 'bird', 'other']
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value : ''
+}
+
+function normalizeSex(value: unknown): Sex | null {
+  if (value === 'male' || value === 'female') return value
+  return null
 }
 
 function normalizePerson(raw: unknown): Person | null {
@@ -22,7 +27,7 @@ function normalizePerson(raw: unknown): Person | null {
     id,
     firstName,
     lastName,
-    sex: SEXES.includes(value.sex as Sex) ? (value.sex as Sex) : 'unknown',
+    sex: normalizeSex(value.sex),
     birthDate: text(value.birthDate),
     deathDate: text(value.deathDate),
     birthPlace: text(value.birthPlace),
@@ -34,9 +39,40 @@ function normalizePerson(raw: unknown): Person | null {
   }
 }
 
+function normalizePet(raw: unknown): Pet | null {
+  if (!raw || typeof raw !== 'object') return null
+  const value = raw as Record<string, unknown>
+  const name = text(value.name).trim()
+  if (!name) return null
+
+  const now = Date.now()
+  const species: PetSpecies = PET_SPECIES.includes(value.species as PetSpecies)
+    ? (value.species as PetSpecies)
+    : 'other'
+
+  const ownerIds = Array.isArray(value.ownerIds)
+    ? value.ownerIds.filter((item): item is string => typeof item === 'string' && item.length > 0)
+    : []
+
+  return {
+    id: typeof value.id === 'string' && value.id ? value.id : newId(),
+    name,
+    species,
+    breed: text(value.breed).trim() || undefined,
+    birthDate: text(value.birthDate),
+    deathDate: text(value.deathDate),
+    photo: typeof value.photo === 'string' && value.photo.startsWith('data:image') ? value.photo : undefined,
+    notes: text(value.notes),
+    ownerIds,
+    createdAt: typeof value.createdAt === 'number' ? value.createdAt : now,
+    updatedAt: typeof value.updatedAt === 'number' ? value.updatedAt : now,
+  }
+}
+
 /**
  * Valida y normaliza un árbol venido de localStorage o de un archivo.
  * Devuelve `null` si el contenido no tiene forma de árbol genealógico.
+ * Compatible con archivos antiguos (sin mascotas ni sexo definido).
  */
 export function parseTree(raw: unknown): TreeData | null {
   if (!raw || typeof raw !== 'object') return null
@@ -79,11 +115,28 @@ export function parseTree(raw: unknown): TreeData | null {
     }
   }
 
+  const pets: Pet[] = []
+  const petSeen = new Set<string>()
+  if (Array.isArray(value.pets)) {
+    for (const item of value.pets) {
+      const pet = normalizePet(item)
+      if (!pet) continue
+      if (petSeen.has(pet.id)) pet.id = newId()
+      petSeen.add(pet.id)
+      // Filtra dueños que ya no existen.
+      pet.ownerIds = pet.ownerIds.filter((id) => validIds.has(id))
+      pets.push(pet)
+    }
+  }
+  // Elimina mascotas sin dueños válidos para no romper referencias.
+  const validPets = pets.filter((pet) => pet.ownerIds.length > 0)
+
   return {
-    version: 1,
+    version: typeof value.version === 'number' ? value.version : 2,
     title: text(value.title).trim() || 'Mi árbol genealógico',
     people,
     relationships,
+    pets: validPets,
     updatedAt: Date.now(),
   }
 }

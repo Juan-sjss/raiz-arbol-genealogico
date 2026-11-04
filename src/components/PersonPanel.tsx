@@ -1,6 +1,6 @@
 import { useTree } from '../store/TreeStore'
-import { childrenOf, parentsOf, partnersOf } from '../lib/tree'
-import { fullName, lifeSpan, type Person } from '../types'
+import { childrenOf, parentsOf, partnersOf, petsOfPerson } from '../lib/tree'
+import { fullName, lifeSpan, petLifeSpan, petSpeciesLabel, type Person } from '../types'
 import {
   ChevronRightIcon,
   HeartIcon,
@@ -22,6 +22,9 @@ interface PersonPanelProps {
   onFocus: (id: string) => void
   onCreateRelative: (kind: RelationKind) => void
   onLinkExisting: (kind: RelationKind) => void
+  onAddPet: () => void
+  onEditPet: (petId: string) => void
+  onDeletePet: (petId: string) => void
 }
 
 interface RelationListProps {
@@ -56,7 +59,7 @@ function RelationList({
           {people.map((relative) => (
             <li key={relative.id} className="relation-item">
               <button type="button" className="relation-main" onClick={() => onFocus(relative.id)}>
-                <span className={`mini-avatar sex-${relative.sex}`}>
+                <span className={`mini-avatar sex-${relative.sex ?? 'pending'}`}>
                   {relative.photo ? (
                     <img src={relative.photo} alt="" />
                   ) : (
@@ -102,12 +105,16 @@ export function PersonPanel({
   onFocus,
   onCreateRelative,
   onLinkExisting,
+  onAddPet,
+  onEditPet,
+  onDeletePet,
 }: PersonPanelProps) {
   const { data, unlink } = useTree()
 
   const parents = parentsOf(data, person.id)
   const partners = partnersOf(data, person.id)
   const children = childrenOf(data, person.id)
+  const pets = petsOfPerson(data, person.id)
 
   const removeParent = (parentId: string) => {
     const rel = data.relationships.find(
@@ -155,7 +162,7 @@ export function PersonPanel({
 
       <div className="panel-scroll">
         <header className="panel-header">
-          <span className={`big-avatar sex-${person.sex}`}>
+          <span className={`big-avatar sex-${person.sex ?? 'pending'}`}>
             {person.photo ? <img src={person.photo} alt="" /> : <span>{initials}</span>}
           </span>
           <div className="panel-title">
@@ -163,10 +170,19 @@ export function PersonPanel({
             <p className="panel-dates">{lifeSpan(person) || 'Sin fechas registradas'}</p>
             <p className="panel-kind">
               <UsersIcon size={14} />
-              {person.sex === 'male' ? 'Hombre' : person.sex === 'female' ? 'Mujer' : 'Sin especificar'}
+              {person.sex === 'male' ? 'Hombre' : person.sex === 'female' ? 'Mujer' : 'Sexo sin elegir'}
             </p>
           </div>
         </header>
+
+        {person.sex === null ? (
+          <div className="pet-section">
+            <p className="panel-muted">Falta elegir el sexo de esta persona.</p>
+            <button type="button" className="text-button" onClick={onEdit}>
+              Completar ficha
+            </button>
+          </div>
+        ) : null}
 
         {facts.length > 0 ? (
           <dl className="facts">
@@ -187,6 +203,59 @@ export function PersonPanel({
             <p>{person.notes}</p>
           </div>
         ) : null}
+
+        <section className="relation-group">
+          <div className="relation-head">
+            <h3>Mascotas</h3>
+            <span className="counter">{pets.length}</span>
+          </div>
+          {pets.length === 0 ? (
+            <p className="relation-empty">Sin mascotas registradas.</p>
+          ) : (
+            <ul className="relation-list">
+              {pets.map((pet) => (
+                <li key={pet.id} className="relation-item">
+                  <div className="relation-main">
+                    <span className="mini-avatar sex-pending">
+                      {pet.photo ? <img src={pet.photo} alt="" /> : <span>{pet.name.charAt(0).toUpperCase()}</span>}
+                    </span>
+                    <span className="relation-info">
+                      <span className="relation-name">{pet.name}</span>
+                      <span className="relation-meta">
+                        {petSpeciesLabel(pet.species)}
+                        {pet.breed ? ` · ${pet.breed}` : ''}
+                        {petLifeSpan(pet) ? ` · ${petLifeSpan(pet)}` : ''}
+                      </span>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="icon-button subtle"
+                    onClick={() => onEditPet(pet.id)}
+                    aria-label={`Editar ${pet.name}`}
+                    title="Editar"
+                  >
+                    <PencilIcon size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-button subtle"
+                    onClick={() => onDeletePet(pet.id)}
+                    aria-label={`Eliminar ${pet.name}`}
+                    title="Eliminar"
+                  >
+                    <TrashIcon size={16} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="relation-actions">
+            <button type="button" className="text-button" onClick={onAddPet}>
+              <PlusIcon size={16} /> Añadir mascota
+            </button>
+          </div>
+        </section>
 
         <RelationList
           title="Padres"

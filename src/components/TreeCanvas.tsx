@@ -171,6 +171,26 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
             />
           )
         })}
+
+        {data.pets.flatMap((pet) =>
+          pet.ownerIds.map((ownerId) => {
+            const placement = layout.positions.get(ownerId)
+            if (!placement) return null
+            return (
+              <div
+                key={`${pet.id}-${ownerId}`}
+                className="pet-badge"
+                style={{
+                  transform: `translate3d(${placement.x}px, ${placement.y + CARD_H + 6}px, 0)`,
+                }}
+                title={`${pet.name}`}
+              >
+                <span aria-hidden="true">🐾</span>
+                <span>{pet.name}</span>
+              </div>
+            )
+          }),
+        )}
       </div>
 
       <div className="zoom-controls" data-no-pan onClick={(event) => event.stopPropagation()}>

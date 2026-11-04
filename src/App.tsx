@@ -3,6 +3,7 @@ import { ConfirmDialog } from './components/ConfirmDialog'
 import { MenuIcon, PlusIcon, SearchIcon, SparklesIcon, TreeIcon } from './components/Icons'
 import { MenuSheet } from './components/MenuSheet'
 import { PersonForm } from './components/PersonForm'
+import { PetForm } from './components/PetForm'
 import { PersonPanel, type RelationKind } from './components/PersonPanel'
 import { PersonPicker } from './components/PersonPicker'
 import { SearchOverlay } from './components/SearchOverlay'
@@ -12,7 +13,7 @@ import { exportTree, readFileAsText } from './lib/backup'
 import { parseTree } from './lib/storage'
 import { childrenOf, parentsOf, partnersOf } from './lib/tree'
 import { useTree } from './store/TreeStore'
-import { EMPTY_DRAFT, fullName, type NewPersonLink, type Person, type PersonDraft } from './types'
+import { EMPTY_DRAFT, EMPTY_PET_DRAFT, fullName, type NewPersonLink, type Person, type PersonDraft, type Pet, type PetDraft } from './types'
 
 type FormState =
   | { kind: 'create'; link: NewPersonLink; subtitle?: string }
@@ -51,6 +52,9 @@ export default function App() {
     addPerson,
     updatePerson,
     deletePerson,
+    addPet,
+    updatePet,
+    deletePet,
     linkParent,
     linkPartner,
     replaceTree,
@@ -62,6 +66,11 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [focusRequest, setFocusRequest] = useState<{ id: string; nonce: number } | null>(null)
   const [form, setForm] = useState<FormState | null>(null)
+  const [petForm, setPetForm] = useState<
+    | { kind: 'create'; ownerId?: string }
+    | { kind: 'edit'; petId: string }
+    | null
+  >(null)
   const [picker, setPicker] = useState<PickerState | null>(null)
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -156,6 +165,33 @@ export default function App() {
     setForm(null)
   }
 
+  const handlePetSubmit = (draft: PetDraft) => {
+    if (!petForm) return
+    if (petForm.kind === 'create') {
+      addPet(draft)
+      notify('Mascota añadida.')
+    } else {
+      updatePet(petForm.petId, draft)
+      notify('Mascota actualizada.')
+    }
+    setPetForm(null)
+  }
+
+  const askDeletePet = (petId: string) => {
+    const pet = data.pets.find((item) => item.id === petId)
+    if (!pet) return
+    setConfirm({
+      title: 'Eliminar mascota',
+      message: `Se eliminará a ${pet.name}. Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar',
+      danger: true,
+      action: () => {
+        deletePet(pet.id)
+        notify('Mascota eliminada.')
+      },
+    })
+  }
+
   const askDelete = () => {
     if (!selectedPerson) return
     const person = selectedPerson
@@ -192,7 +228,7 @@ export default function App() {
       if (!parsed) throw new Error('Formato no reconocido')
       replaceTree(parsed)
       setSelectedId(null)
-      notify(`Importadas ${parsed.people.length} personas.`)
+      notify(`Importadas ${parsed.people.length} personas y ${parsed.pets.length} mascotas.`)
     } catch {
       notify('Ese archivo no es un respaldo válido de Raíz.', 'error')
     }
@@ -315,6 +351,9 @@ export default function App() {
           onFocus={focusPerson}
           onCreateRelative={createRelative}
           onLinkExisting={openPicker}
+          onAddPet={() => setPetForm({ kind: 'create', ownerId: selectedPerson?.id })}
+          onEditPet={(petId) => setPetForm({ kind: 'edit', petId })}
+          onDeletePet={askDeletePet}
         />
       ) : null}
 
@@ -329,6 +368,22 @@ export default function App() {
           <span>Añadir</span>
         </button>
       </div>
+
+      {petForm ? (
+        <PetForm
+          title={petForm.kind === 'create' ? 'Nueva mascota' : 'Editar mascota'}
+          subtitle={petForm.kind === 'create' ? 'Se vinculará a la persona seleccionada.' : undefined}
+          initial={
+            petForm.kind === 'create'
+              ? { ...EMPTY_PET_DRAFT, ownerIds: petForm.ownerId ? [petForm.ownerId] : [] }
+              : mapPetToDraft(data.pets.find((pet) => pet.id === petForm.petId))
+          }
+          people={data.people}
+          submitLabel={petForm.kind === 'create' ? 'Añadir mascota' : 'Guardar cambios'}
+          onSubmit={handlePetSubmit}
+          onClose={() => setPetForm(null)}
+        />
+      ) : null}
 
       {form ? (
         <PersonForm
@@ -410,5 +465,19 @@ function mapPersonToDraft(person: Person | undefined): PersonDraft {
     occupation: person.occupation ?? '',
     notes: person.notes ?? '',
     photo: person.photo,
+  }
+}
+
+function mapPetToDraft(pet: Pet | undefined): PetDraft {
+  if (!pet) return EMPTY_PET_DRAFT
+  return {
+    name: pet.name,
+    species: pet.species,
+    breed: pet.breed ?? '',
+    birthDate: pet.birthDate ?? '',
+    deathDate: pet.deathDate ?? '',
+    photo: pet.photo,
+    notes: pet.notes ?? '',
+    ownerIds: pet.ownerIds,
   }
 }

@@ -1,4 +1,4 @@
-import type { Person, Relationship, TreeData } from '../types'
+import type { Person, Pet, Relationship, TreeData } from '../types'
 
 export function parentsOf(data: TreeData, personId: string): Person[] {
   const ids = data.relationships
@@ -62,6 +62,16 @@ export function sortPeople(people: Person[]): Person[] {
     if (byLast !== 0) return byLast
     return a.firstName.localeCompare(b.firstName, 'es', { sensitivity: 'base' })
   })
+}
+
+export function petsOfPerson(data: TreeData, personId: string): Pet[] {
+  return data.pets.filter((pet) => pet.ownerIds.includes(personId))
+}
+
+export function ownersOfPet(data: TreeData, pet: Pet): Person[] {
+  return pet.ownerIds
+    .map((id) => data.people.find((p) => p.id === id))
+    .filter((p): p is Person => Boolean(p))
 }
 
 /** Texto en minúsculas y sin tildes, para buscar de forma tolerante. */

@@ -18,7 +18,7 @@ export function PersonCard({ person, x, y, selected, dimmed, onSelect }: PersonC
   return (
     <button
       type="button"
-      className={`person-card sex-${person.sex}${selected ? ' is-selected' : ''}${dimmed ? ' is-dimmed' : ''}`}
+      className={`person-card sex-${person.sex ?? 'pending'}${selected ? ' is-selected' : ''}${dimmed ? ' is-dimmed' : ''}`}
       style={{
         width: CARD_W,
         height: CARD_H,

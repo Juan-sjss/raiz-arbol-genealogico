@@ -1,4 +1,6 @@
-export type Sex = 'male' | 'female' | 'unknown'
+export type Sex = 'male' | 'female'
+
+export type PetSpecies = 'dog' | 'cat' | 'bird' | 'other'
 
 export type RelationType = 'parent' | 'partner'
 
@@ -6,7 +8,8 @@ export interface Person {
   id: string
   firstName: string
   lastName: string
-  sex: Sex
+  /** Sexo biológico/legal de la persona. `null` = pendiente de elegir (migración). */
+  sex: Sex | null
   birthDate?: string
   deathDate?: string
   birthPlace?: string
@@ -14,6 +17,21 @@ export interface Person {
   notes?: string
   /** Imagen en formato data URL (comprimida antes de guardarse). */
   photo?: string
+  createdAt: number
+  updatedAt: number
+}
+
+export interface Pet {
+  id: string
+  name: string
+  species: PetSpecies
+  breed?: string
+  birthDate?: string
+  deathDate?: string
+  photo?: string
+  notes?: string
+  /** Personas (dueños) a las que se vincula la mascota. */
+  ownerIds: string[]
   createdAt: number
   updatedAt: number
 }
@@ -28,15 +46,19 @@ export interface Relationship {
 }
 
 export interface TreeData {
-  version: 1
+  version: number
   title: string
   people: Person[]
   relationships: Relationship[]
+  pets: Pet[]
   updatedAt: number
 }
 
 /** Campos editables de una persona (todo menos id y marcas de tiempo). */
 export type PersonDraft = Omit<Person, 'id' | 'createdAt' | 'updatedAt'>
+
+/** Campos editables de una mascota (todo menos id y marcas de tiempo). */
+export type PetDraft = Omit<Pet, 'id' | 'createdAt' | 'updatedAt'>
 
 /** Cómo se conecta una persona nueva al árbol existente. */
 export type NewPersonLink =
@@ -48,7 +70,7 @@ export type NewPersonLink =
 export const EMPTY_DRAFT: PersonDraft = {
   firstName: '',
   lastName: '',
-  sex: 'unknown',
+  sex: null,
   birthDate: '',
   deathDate: '',
   birthPlace: '',
@@ -57,8 +79,32 @@ export const EMPTY_DRAFT: PersonDraft = {
   photo: undefined,
 }
 
+export const EMPTY_PET_DRAFT: PetDraft = {
+  name: '',
+  species: 'dog',
+  breed: '',
+  birthDate: '',
+  deathDate: '',
+  photo: undefined,
+  notes: '',
+  ownerIds: [],
+}
+
 export function fullName(person: Person): string {
   return `${person.firstName} ${person.lastName}`.trim()
+}
+
+export function petSpeciesLabel(species: PetSpecies): string {
+  switch (species) {
+    case 'dog':
+      return 'Perro'
+    case 'cat':
+      return 'Gato'
+    case 'bird':
+      return 'Ave'
+    default:
+      return 'Otro'
+  }
 }
 
 function yearOf(value?: string): string {
@@ -76,8 +122,17 @@ export function lifeSpan(person: Person): string {
   return `† ${death}`
 }
 
-export function sexLabel(sex: Sex): string {
+export function petLifeSpan(pet: Pet): string {
+  const birth = yearOf(pet.birthDate)
+  const death = yearOf(pet.deathDate)
+  if (!birth && !death) return ''
+  if (birth && death) return `${birth} – ${death}`
+  if (birth) return `n. ${birth}`
+  return `† ${death}`
+}
+
+export function sexLabel(sex: Sex | null): string {
   if (sex === 'male') return 'Hombre'
   if (sex === 'female') return 'Mujer'
-  return 'Sin especificar'
+  return 'Elegir sexo'
 }
