@@ -204,7 +204,7 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
                 }}
                 title={`${pet.name}`}
               >
-                <span aria-hidden="true">🐾</span>
+                <span aria-hidden="true">🐾 </span>
                 <span>{pet.name}</span>
               </div>
             )
