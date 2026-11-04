@@ -1,5 +1,7 @@
 # 🌳 Raíz
 
+[![Android APK](https://github.com/ju-pa-leguizamon/raiz-arbol-genealogico/actions/workflows/android.yml/badge.svg)](https://github.com/ju-pa-leguizamon/raiz-arbol-genealogico/actions/workflows/android.yml)
+
 **Tu árbol genealógico, en tu bolsillo.**
 
 Raíz es una app para Android (y web) con la que puedes armar y explorar tu historia
@@ -33,6 +35,8 @@ La app web se empaqueta con [Capacitor](https://capacitorjs.com/) dentro de un
 proyecto Android nativo. El resultado es un APK que funciona sin conexión.
 
 ### Instalar el APK
+
+**⬇️ [Descargar la última versión](../../releases/latest)**
 
 1. Descarga el APK desde la pestaña **Releases** del repositorio (o compílalo tú
    mismo, ver abajo).
@@ -130,7 +134,8 @@ Todo el árbol se guarda como un único JSON en `localStorage`, bajo la clave
 ## 🔐 Privacidad
 
 - No hay backend ni cuentas.
-- La app Android **no declara el permiso de internet**.
+- La app **no hace peticiones a internet**: la interfaz se sirve desde el propio APK
+  y el árbol nunca sale del teléfono.
 - Las fotos se comprimen y se guardan dentro del propio árbol (data URL).
 - Si borras la app o los datos del navegador, pierdes el árbol: **exporta un
   respaldo** de vez en cuando. 😉
