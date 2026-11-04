@@ -1,6 +1,6 @@
 {
   "name": "raiz-arbol-genealogico",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "description": "Raíz — tu árbol genealógico, en tu bolsillo. App Android offline para crear y visualizar tu árbol familiar.",
   "type": "module",
