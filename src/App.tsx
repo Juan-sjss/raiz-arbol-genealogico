@@ -10,6 +10,9 @@ import { SearchOverlay } from './components/SearchOverlay'
 import { Toast } from './components/Toast'
 import { TreeCanvas } from './components/TreeCanvas'
 import { exportTree, readFileAsText } from './lib/backup'
+import { exportImage } from './lib/exportImage'
+import { exportPdf } from './lib/exportPdf'
+import type { ExportFormat } from './components/MenuSheet'
 import { parseTree } from './lib/storage'
 import { childrenOf, parentsOf, partnersOf } from './lib/tree'
 import { useTree } from './store/TreeStore'
@@ -75,6 +78,10 @@ export default function App() {
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('json')
+  const [exportMultiPage, setExportMultiPage] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [exportProgress, setExportProgress] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -209,16 +216,43 @@ export default function App() {
   }
 
   const handleExport = async () => {
-    setMenuOpen(false)
+    if (exporting) return
+    setExporting(true)
+    setExportProgress('Preparando…')
     try {
-      const result = await exportTree(data)
-      notify(
-        result === 'shared'
-          ? 'Respaldo listo para guardar o compartir.'
-          : 'Respaldo descargado en tu dispositivo.',
-      )
-    } catch {
-      notify('No se pudo exportar el respaldo.', 'error')
+      if (exportFormat === 'json') {
+        const result = await exportTree(data)
+        notify(
+          result === 'shared'
+            ? 'Respaldo listo para guardar o compartir.'
+            : 'Respaldo descargado en tu dispositivo.',
+        )
+      } else if (exportFormat === 'jpeg' || exportFormat === 'png') {
+        setExportProgress('Capturando el árbol…')
+        const result = await exportImage(data, exportFormat)
+        notify(
+          result === 'shared'
+            ? 'Imagen lista para guardar o compartir.'
+            : 'Imagen descargada en tu dispositivo.',
+        )
+      } else {
+        setExportProgress('Generando el PDF…')
+        const result = await exportPdf(data, exportMultiPage)
+        notify(
+          result === 'shared'
+            ? 'PDF listo para guardar o compartir.'
+            : 'PDF descargado en tu dispositivo.',
+        )
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message === 'TREE_TOO_LARGE'
+          ? 'El árbol es demasiado grande para exportar como imagen. Prueba con JSON o reduce el número de personas.'
+          : 'No se pudo exportar. Inténtalo de nuevo.'
+      notify(message, 'error')
+    } finally {
+      setExporting(false)
+      setExportProgress(null)
     }
   }
 
@@ -411,6 +445,12 @@ export default function App() {
         personCount={data.people.length}
         saveState={saveState}
         theme={theme}
+        exportFormat={exportFormat}
+        onExportFormatChange={setExportFormat}
+        exportMultiPage={exportMultiPage}
+        onExportMultiPageChange={setExportMultiPage}
+        exporting={exporting}
+        exportProgress={exportProgress}
         onToggleTheme={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
         onExport={() => void handleExport()}
         onImport={() => {

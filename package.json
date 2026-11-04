@@ -28,6 +28,8 @@
     "@capacitor/core": "^8.6.0",
     "@capacitor/filesystem": "^8.1.5",
     "@capacitor/share": "^8.0.3",
+    "html-to-image": "^1.11.13",
+    "jspdf": "^4.2.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
