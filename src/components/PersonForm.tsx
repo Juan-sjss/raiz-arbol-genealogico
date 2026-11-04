@@ -15,7 +15,6 @@ interface PersonFormProps {
 const SEX_OPTIONS: Array<{ value: Sex; label: string }> = [
   { value: 'female', label: 'Mujer' },
   { value: 'male', label: 'Hombre' },
-  { value: 'unknown', label: 'Sin especificar' },
 ]
 
 export function PersonForm({
@@ -54,6 +53,10 @@ export function PersonForm({
       setError('Escribe al menos el nombre o el apellido.')
       return
     }
+    if (!draft.sex) {
+      setError('Elige el sexo de la persona.')
+      return
+    }
     onSubmit({
       ...draft,
       firstName: draft.firstName.trim(),
@@ -85,7 +88,7 @@ export function PersonForm({
             <div className="photo-row">
               <button
                 type="button"
-                className={`photo-picker sex-${draft.sex}`}
+                className={`photo-picker sex-${draft.sex ?? 'pending'}`}
                 onClick={() => fileRef.current?.click()}
               >
                 {draft.photo ? (

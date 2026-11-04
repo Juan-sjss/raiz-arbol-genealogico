@@ -1587,3 +1587,8 @@ ul {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Mascotas y sexo pendiente (refactor de datos) */
+.sex-pending { background: var(--bg-deep); color: var(--ink-soft); }
+.pet-badge { position: absolute; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--ink-soft); font-size: 11px; white-space: nowrap; pointer-events: none; z-index: 2; }
+.pet-section { margin: 8px 0 12px; padding: 10px 12px; border: 1px dashed var(--line-strong); border-radius: var(--radius); background: var(--accent-soft); }

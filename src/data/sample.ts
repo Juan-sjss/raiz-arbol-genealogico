@@ -1,4 +1,4 @@
-import type { Person, Relationship, TreeData } from '../types'
+import type { Person, Pet, Relationship, TreeData } from '../types'
 
 interface Seed {
   key: string
@@ -209,11 +209,26 @@ export function sampleTree(): TreeData {
     })
   })
 
+  const pets: Pet[] = [
+    {
+      id: 'demo-pet-1',
+      name: 'Luna',
+      species: 'dog',
+      breed: 'Mestiza',
+      birthDate: '2018-03-10',
+      ownerIds: [ids.get('diego')!, ids.get('alba')!],
+      notes: 'La perra de la familia.',
+      createdAt: now,
+      updatedAt: now,
+    },
+  ]
+
   return {
-    version: 1,
+    version: 2,
     title: 'Familia García',
     people,
     relationships,
+    pets,
     updatedAt: now,
   }
 }

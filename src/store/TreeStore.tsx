@@ -12,7 +12,7 @@ import { sampleTree } from '../data/sample'
 import { newId } from '../lib/id'
 import { clearStoredTree, loadTree, saveTree } from '../lib/storage'
 import { ancestorsOf } from '../lib/tree'
-import type { NewPersonLink, Person, PersonDraft, TreeData } from '../types'
+import type { NewPersonLink, Person, PersonDraft, Pet, PetDraft, TreeData } from '../types'
 
 interface Toast {
   id: number
@@ -28,6 +28,9 @@ interface TreeContextValue {
   addPerson: (draft: PersonDraft, link: NewPersonLink) => string
   updatePerson: (id: string, draft: PersonDraft) => void
   deletePerson: (id: string) => void
+  addPet: (draft: PetDraft) => string
+  updatePet: (id: string, draft: PetDraft) => void
+  deletePet: (id: string) => void
   linkParent: (parentId: string, childId: string) => boolean
   linkPartner: (a: string, b: string) => boolean
   unlink: (relationshipId: string) => void
@@ -39,10 +42,11 @@ interface TreeContextValue {
 const TreeContext = createContext<TreeContextValue | null>(null)
 
 const EMPTY_TREE: TreeData = {
-  version: 1,
+  version: 2,
   title: 'Mi árbol genealógico',
   people: [],
   relationships: [],
+  pets: [],
   updatedAt: Date.now(),
 }
 
@@ -152,6 +156,65 @@ export function TreeProvider({ children }: { children: ReactNode }) {
         ...current,
         people: current.people.filter((person) => person.id !== id),
         relationships: current.relationships.filter((rel) => rel.from !== id && rel.to !== id),
+        pets: current.pets
+          .map((pet) => ({ ...pet, ownerIds: pet.ownerIds.filter((ownerId) => ownerId !== id) }))
+          .filter((pet) => pet.ownerIds.length > 0),
+      }))
+    },
+    [mutate],
+  )
+
+  const addPet = useCallback(
+    (draft: PetDraft): string => {
+      const id = newId()
+      const now = Date.now()
+      mutate((current) => {
+        const pet: Pet = {
+          ...draft,
+          id,
+          name: draft.name.trim(),
+          breed: draft.breed?.trim() || undefined,
+          ownerIds: draft.ownerIds.filter((ownerId) =>
+            current.people.some((person) => person.id === ownerId),
+          ),
+          createdAt: now,
+          updatedAt: now,
+        }
+        return { ...current, pets: [...current.pets, pet] }
+      })
+      return id
+    },
+    [mutate],
+  )
+
+  const updatePet = useCallback(
+    (id: string, draft: PetDraft) => {
+      mutate((current) => ({
+        ...current,
+        pets: current.pets.map((pet) =>
+          pet.id === id
+            ? {
+                ...pet,
+                ...draft,
+                name: draft.name.trim() || pet.name,
+                breed: draft.breed?.trim() || undefined,
+                ownerIds: draft.ownerIds.filter((ownerId) =>
+                  current.people.some((person) => person.id === ownerId),
+                ),
+                updatedAt: Date.now(),
+              }
+            : pet,
+        ),
+      }))
+    },
+    [mutate],
+  )
+
+  const deletePet = useCallback(
+    (id: string) => {
+      mutate((current) => ({
+        ...current,
+        pets: current.pets.filter((pet) => pet.id !== id),
       }))
     },
     [mutate],
@@ -236,6 +299,9 @@ export function TreeProvider({ children }: { children: ReactNode }) {
       addPerson,
       updatePerson,
       deletePerson,
+      addPet,
+      updatePet,
+      deletePet,
       linkParent,
       linkPartner,
       unlink,
@@ -251,6 +317,9 @@ export function TreeProvider({ children }: { children: ReactNode }) {
       addPerson,
       updatePerson,
       deletePerson,
+      addPet,
+      updatePet,
+      deletePet,
       linkParent,
       linkPartner,
       unlink,
