@@ -66,7 +66,7 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
       parentGroups.set(rel.to, list)
     }
 
-    const childPaths: Array<{ key: string; d: string }> = []
+    const childPaths: Array<{ key: string; d: string; thickness: number }> = []
     for (const [childId, parentIds] of parentGroups) {
       const child = positions.get(childId)!
       const parentPoints = [...new Set(parentIds)]
@@ -88,8 +88,13 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
 
       const endX = child.x + CARD_W / 2
       const endY = child.y
-      const midY = bottom + Math.max(22, (endY - bottom) * 0.48)
-      childPaths.push({ key: childId, d: `M ${startX} ${bottom} V ${midY} H ${endX} V ${endY}` })
+       const drop = endY - bottom
+       const cp1x = startX
+       const cp1y = bottom + drop * 0.35
+       const cp2x = endX
+       const cp2y = endY - drop * 0.25
+       const thickness = Math.max(1.1, Math.min(3.4, 3.4 - (endY / Math.max(1, layout.height)) * 1.6))
+       childPaths.push({ key: childId, d: `M ${startX} ${bottom} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`, thickness })
     }
 
     const partnerPaths: Array<{ key: string; x1: number; x2: number; y: number }> = []
@@ -149,7 +154,21 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
             />
           ))}
           {edges.childPaths.map((edge) => (
-            <path key={edge.key} className="edge edge-child" d={edge.d} />
+            <path
+              key={edge.key}
+              className="edge edge-child"
+              d={edge.d}
+              style={{ strokeWidth: edge.thickness }}
+            />
+          ))}
+          {edges.partnerPaths.map((edge) => (
+            <circle
+              key={`knot-${edge.key}`}
+              className="edge-knot"
+              cx={(edge.x1 + edge.x2) / 2}
+              cy={edge.y}
+              r={4}
+            />
           ))}
         </svg>
 
