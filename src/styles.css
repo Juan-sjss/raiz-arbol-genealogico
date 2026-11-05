@@ -16,10 +16,16 @@
   --accent: #5f7a52;
   --accent-deep: #4a6240;
   --accent-soft: #e6eddf;
-  --accent-female: #c48a4a;
-  --accent-female-deep: #a86a3a;
-  --branch: #5b3f2a;
-  --branch-deep: #3d2a1c;
+  --accent-female: #d98a3d;
+  --accent-female-deep: #a8642a;
+  --branch: #6b4426;
+  --branch-deep: #4a2d18;
+  --leaf-h: 100;
+  --leaf-s: 48%;
+  --leaf-l: 38%;
+  --leaf-h2: 32;
+  --leaf-s2: 62%;
+  --leaf-l2: 42%;
   --pet: #7a5a3a;
   --gold: #c9944a;
   --danger: #a34434;
@@ -44,10 +50,10 @@
   --accent: #8fa87a;
   --accent-deep: #a8c092;
   --accent-soft: #2a3324;
-  --accent-female: #d4a06a;
-  --accent-female-deep: #e0b47e;
-  --branch: #a8845a;
-  --branch-deep: #c9a07a;
+  --accent-female: #e0a061;
+  --accent-female-deep: #f0c385;
+  --branch: #c49a6b;
+  --branch-deep: #e2bd8f;
   --pet: #a8845a;
   --gold: #d9a85a;
   --danger: #e58a78;
@@ -283,20 +289,55 @@ ul {
 .edge {
   fill: none;
   stroke: var(--branch);
-  stroke-width: 2.6;
+  stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 .edge-child {
   stroke: var(--branch-deep);
 }
 
+.branch-trunk {
+  stroke: var(--branch);
+  stroke-width: 8;
+}
+
+.branch-bark {
+  stroke: var(--branch-deep);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  fill: none;
+  opacity: 0.75;
+}
+
+.branch-twig {
+  stroke: var(--branch);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.edge-leaf {
+  fill: var(--accent);
+  stroke: var(--accent-deep);
+  stroke-width: 0.6;
+  opacity: 0.95;
+}
+
+.root-lines {
+  fill: none;
+  stroke: var(--branch-deep);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+
 .edge-partner {
   stroke: var(--gold);
-  stroke-width: 2.8;
-  opacity: 0.85;
+  stroke-width: 3;
+  opacity: 0.9;
   stroke-dasharray: 0 0;
 }
 
@@ -308,32 +349,83 @@ ul {
   left: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px 10px 12px;
+  gap: 8px;
+  padding: 14px 20px 18px 14px;
   overflow: hidden;
   text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 42px 16px 42px 16px;
+  background:
+    radial-gradient(120% 90% at 20% 0%, rgba(255, 255, 255, 0.28) 0%, transparent 55%),
+    radial-gradient(90% 70% at 85% 100%, rgba(0, 0, 0, 0.12) 0%, transparent 60%),
+    linear-gradient(135deg, hsl(var(--leaf-h) var(--leaf-s) var(--leaf-l)) 0%, hsl(var(--leaf-h2) var(--leaf-s2) var(--leaf-l2)) 100%);
+  border: 1px solid hsl(var(--leaf-h) var(--leaf-s) calc(var(--leaf-l) - 10%));
+  -webkit-clip-path: path('M86 2 C130 20 168 42 168 46 C168 58 132 86 86 90 C40 86 4 58 4 46 C4 42 42 20 86 2 Z');
+  clip-path: path('M86 2 C130 20 168 42 168 46 C168 58 132 86 86 90 C40 86 4 58 4 46 C4 42 42 20 86 2 Z');
   box-shadow: var(--shadow-soft);
   cursor: pointer;
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease,
-    opacity 0.2s ease;
+    opacity 0.2s ease,
+    filter 0.18s ease;
   -webkit-tap-highlight-color: transparent;
   opacity: 1;
 }
 
+.person-card::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  bottom: 8%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.5), transparent);
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.person-card:hover {
+  filter: brightness(1.08) saturate(1.05);
+}
+
+.leaf-vein {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.28;
+}
+.leaf-vein-main {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+.leaf-vein-small {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.65);
+  stroke-width: 0.7;
+  stroke-linecap: round;
+}
+
 .person-card.sex-male {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
-  border-color: var(--accent-deep);
+  --leaf-h: 100;
+  --leaf-s: 48%;
+  --leaf-l: 36%;
+  --leaf-h2: 95;
+  --leaf-s2: 55%;
+  --leaf-l2: 28%;
   color: #f5f0e6;
 }
 
 .person-card.sex-female {
-  background: linear-gradient(135deg, var(--accent-female) 0%, var(--accent-female-deep) 100%);
-  border-color: var(--accent-female-deep);
+  --leaf-h: 28;
+  --leaf-s: 72%;
+  --leaf-l: 46%;
+  --leaf-h2: 38;
+  --leaf-s2: 68%;
+  --leaf-l2: 38%;
   color: #2a2116;
 }
 

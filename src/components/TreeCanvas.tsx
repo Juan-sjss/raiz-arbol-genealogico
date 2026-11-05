@@ -66,7 +66,16 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
       parentGroups.set(rel.to, list)
     }
 
-    const childPaths: Array<{ key: string; d: string; thickness: number }> = []
+    type ChildPath = {
+      key: string
+      d: string
+      thickness: number
+      bark: string
+      twig: string
+      twigEnd: string
+      leaf: string
+    }
+    const childPaths: ChildPath[] = []
     for (const [childId, parentIds] of parentGroups) {
       const child = positions.get(childId)!
       const parentPoints = [...new Set(parentIds)]
@@ -88,13 +97,23 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
 
       const endX = child.x + CARD_W / 2
       const endY = child.y
-       const drop = endY - bottom
-       const cp1x = startX
-       const cp1y = bottom + drop * 0.35
-       const cp2x = endX
-       const cp2y = endY - drop * 0.25
-       const thickness = Math.max(1.1, Math.min(3.4, 3.4 - (endY / Math.max(1, layout.height)) * 1.6))
-       childPaths.push({ key: childId, d: `M ${startX} ${bottom} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`, thickness })
+      const drop = Math.max(24, endY - bottom)
+      // Tronco con un leve zigzag orgánico: sale vertical, se desvía y brota en la hoja.
+      const mx = startX + (endX - startX) * 0.5
+      const t1y = bottom + drop * 0.28
+      const t2y = bottom + drop * 0.58
+      const t3y = bottom + drop * 0.82
+      const wiggle = ((parentPoints.length + childId.length) % 3) - 1
+      const thickness = Math.max(6, Math.min(13, 13 - (endY / Math.max(1, layout.height)) * 4 - (childId.length % 3)))
+      childPaths.push({
+        key: childId,
+        d: `M ${startX} ${bottom - 6} C ${startX} ${t1y}, ${mx + wiggle * 14} ${t1y}, ${mx + wiggle * 14} ${t2y} C ${mx + wiggle * 14} ${t3y}, ${endX} ${t3y}, ${endX} ${endY}`,
+        thickness,
+        bark: `M ${startX + wiggle * 14} ${bottom + drop * 0.18} l -6 ${drop * 0.22} M ${mx + wiggle * 10} ${bottom + drop * 0.42} l 7 ${drop * 0.18} M ${mx - wiggle * 8} ${bottom + drop * 0.62} l -5 ${drop * 0.12}`,
+        twig: `M ${mx + wiggle * 6} ${bottom + drop * 0.52} c -4 ${drop * 0.06}, -10 ${drop * 0.1}, ${-18} ${drop * 0.04}`,
+        twigEnd: `M ${endX + (mx - endX) * 0.15} ${endY - drop * 0.12} c 2 ${drop * 0.08}, -3 ${drop * 0.14}, ${-7} ${drop * 0.1}`,
+        leaf: `M ${endX} ${endY - 8} q 4 -6 10 -4 q -2 8 -10 4`,
+      })
     }
 
     const partnerPaths: Array<{ key: string; x1: number; x2: number; y: number }> = []
@@ -154,12 +173,29 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
             />
           ))}
           {edges.childPaths.map((edge) => (
-            <path
-              key={edge.key}
-              className="edge edge-child"
-              d={edge.d}
-              style={{ strokeWidth: edge.thickness }}
-            />
+            <g key={edge.key}>
+              <path
+                className="edge edge-child branch-trunk"
+                d={edge.d}
+                style={{ strokeWidth: edge.thickness }}
+              />
+              <path
+                className="edge edge-child branch-bark"
+                d={edge.bark}
+                style={{ strokeWidth: Math.max(1.4, edge.thickness * 0.22) }}
+              />
+              <path
+                className="edge edge-child branch-twig"
+                d={edge.twig}
+                style={{ strokeWidth: Math.max(2, edge.thickness * 0.34) }}
+              />
+              <path
+                className="edge edge-child branch-twig"
+                d={edge.twigEnd}
+                style={{ strokeWidth: Math.max(1.6, edge.thickness * 0.28) }}
+              />
+              <path className="edge-leaf" d={edge.leaf} />
+            </g>
           ))}
           {edges.partnerPaths.map((edge) => (
             <circle
@@ -167,9 +203,18 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
               className="edge-knot"
               cx={(edge.x1 + edge.x2) / 2}
               cy={edge.y}
-              r={4}
+              r={5}
             />
           ))}
+          <g className="roots" aria-hidden="true">
+            <path
+              d={Array.from({ length: 7 }, (_, i) => {
+                const x = layout.width * 0.5 + (i - 3) * 18
+                return `M ${x} ${layout.height - 4} c ${(i % 2 ? 1 : -1) * 8} 12, ${(i % 2 ? -1 : 1) * 14} 20, ${(i - 3) * 22} 30`
+              }).join(' ')}
+              className="root-lines"
+            />
+          </g>
         </svg>
 
         {data.people.map((person) => {
