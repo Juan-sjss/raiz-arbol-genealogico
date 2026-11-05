@@ -354,8 +354,11 @@ ul {
 .trunk-segment {
   fill: var(--branch);
   stroke: var(--branch-deep);
+  stroke-width: 3;
   stroke-linecap: round;
-  opacity: 0.92;
+  stroke-linejoin: round;
+  opacity: 0.98;
+  filter: drop-shadow(0 3px 8px rgba(42, 33, 22, 0.25));
 }
 
 .trunk-grain {
