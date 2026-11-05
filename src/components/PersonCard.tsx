@@ -43,6 +43,10 @@ export function PersonCard({ person, x, y, selected, dimmed, onSelect }: PersonC
         {person.birthPlace ? <span className="person-place">{person.birthPlace}</span> : null}
       </span>
       <span className="person-flag" aria-hidden="true" />
+      <svg className="leaf-vein" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M50 2 C52 28 52 72 50 98" className="leaf-vein-main" />
+        <path d="M50 20 C60 26 68 28 78 28 M50 34 C62 40 72 42 84 42 M50 48 C60 54 68 56 78 56 M50 64 C58 68 64 70 74 70 M50 20 C40 26 32 28 22 28 M50 34 C38 40 28 42 16 42 M50 48 C40 54 32 56 22 56 M50 64 C42 68 36 70 26 70" className="leaf-vein-small" />
+      </svg>
     </button>
   )
 }
