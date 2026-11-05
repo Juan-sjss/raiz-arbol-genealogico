@@ -206,11 +206,36 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
               r={5}
             />
           ))}
-          <g className="roots" aria-hidden="true">
+          <g className="trunk-center" aria-hidden="true">
+            {(() => {
+              const cx = layout.width / 2
+              const rows = Math.max(1, layout.generations)
+              const h = layout.height
+              const segs: Array<{ y1: number; y2: number; w: number }> = []
+              for (let g = 0; g < rows; g++) {
+                const y1 = 120 + g * ((h - 160) / rows)
+                const y2 = 120 + (g + 1) * ((h - 160) / rows)
+                segs.push({ y1, y2, w: 12 - g * 1.1 })
+              }
+              return segs.map((s, i) => (
+                <g key={i}>
+                  <path
+                    d={`M ${cx - s.w} ${s.y1} C ${cx - s.w - 6} ${(s.y1 + s.y2) / 2}, ${cx + s.w + 6} ${(s.y1 + s.y2) / 2}, ${cx + s.w} ${s.y2} L ${cx + s.w} ${s.y2 + 4} C ${cx + s.w + 8} ${(s.y1 + s.y2) / 2}, ${cx - s.w - 8} ${(s.y1 + s.y2) / 2}, ${cx - s.w} ${s.y1 + 4} Z`}
+                    className="trunk-segment"
+                    style={{ strokeWidth: Math.max(6, s.w) }}
+                  />
+                  <path
+                    d={`M ${cx - s.w * 0.4} ${s.y1 + 8} c -3 10, 2 22, 0 ${Math.max(18, s.y2 - s.y1 - 16)} M ${cx + s.w * 0.3} ${s.y1 + 14} c 2 8, -2 16, 0 ${Math.max(14, s.y2 - s.y1 - 22)}`}
+                    className="trunk-grain"
+                  />
+                  <ellipse cx={cx} cy={s.y1} rx={s.w * 0.52} ry={s.w * 0.34} className="trunk-knot" />
+                </g>
+              ))
+            })()}
             <path
-              d={Array.from({ length: 7 }, (_, i) => {
-                const x = layout.width * 0.5 + (i - 3) * 18
-                return `M ${x} ${layout.height - 4} c ${(i % 2 ? 1 : -1) * 8} 12, ${(i % 2 ? -1 : 1) * 14} 20, ${(i - 3) * 22} 30`
+              d={Array.from({ length: 11 }, (_, i) => {
+                const x = layout.width * 0.5 + (i - 5) * 26
+                return `M ${x} ${layout.height - 6} c ${(i % 2 ? 1 : -1) * 14} 14, ${(i % 2 ? -1 : 1) * 22} 22, ${(i - 5) * 34} 38`
               }).join(' ')}
               className="root-lines"
             />

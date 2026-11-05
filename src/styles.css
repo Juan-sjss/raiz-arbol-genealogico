@@ -143,17 +143,34 @@ ul {
   overflow: hidden;
 }
 
-.topbar {
-  position: relative;
+.floating-brand {
+  position: absolute;
   z-index: 20;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: 14px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: calc(env(safe-area-inset-top, 0px) + 9px) 12px 9px 14px;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--line);
+  gap: 10px;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.92;
+}
+
+.floating-actions {
+  position: absolute;
+  z-index: 20;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-button.glass {
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
 }
 
 .brand {
@@ -329,9 +346,31 @@ ul {
 .root-lines {
   fill: none;
   stroke: var(--branch-deep);
-  stroke-width: 2;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  opacity: 0.6;
+}
+
+.trunk-segment {
+  fill: var(--branch);
+  stroke: var(--branch-deep);
+  stroke-linecap: round;
+  opacity: 0.92;
+}
+
+.trunk-grain {
+  fill: none;
+  stroke: color-mix(in srgb, var(--branch-deep) 70%, #000 30%);
+  stroke-width: 1.1;
   stroke-linecap: round;
   opacity: 0.55;
+}
+
+.trunk-knot {
+  fill: var(--branch-deep);
+  stroke: var(--branch);
+  stroke-width: 0.8;
+  opacity: 0.85;
 }
 
 .edge-partner {
@@ -350,7 +389,7 @@ ul {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 20px 18px 14px;
+  padding: 16px 24px 20px 16px;
   overflow: hidden;
   text-align: left;
   background:
@@ -358,8 +397,8 @@ ul {
     radial-gradient(90% 70% at 85% 100%, rgba(0, 0, 0, 0.12) 0%, transparent 60%),
     linear-gradient(135deg, hsl(var(--leaf-h) var(--leaf-s) var(--leaf-l)) 0%, hsl(var(--leaf-h2) var(--leaf-s2) var(--leaf-l2)) 100%);
   border: 1px solid hsl(var(--leaf-h) var(--leaf-s) calc(var(--leaf-l) - 10%));
-  -webkit-clip-path: path('M86 2 C130 20 168 42 168 46 C168 58 132 86 86 90 C40 86 4 58 4 46 C4 42 42 20 86 2 Z');
-  clip-path: path('M86 2 C130 20 168 42 168 46 C168 58 132 86 86 90 C40 86 4 58 4 46 C4 42 42 20 86 2 Z');
+  -webkit-clip-path: path('M86 0 C118 8 152 22 166 38 C172 46 172 50 166 58 C152 74 118 88 86 96 C54 88 20 74 6 58 C0 50 0 46 6 38 C20 22 54 8 86 0 Z');
+  clip-path: path('M86 0 C118 8 152 22 166 38 C172 46 172 50 166 58 C152 74 118 88 86 96 C54 88 20 74 6 58 C0 50 0 46 6 38 C20 22 54 8 86 0 Z');
   box-shadow: var(--shadow-soft);
   cursor: pointer;
   transition:
