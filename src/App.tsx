@@ -301,35 +301,34 @@ export default function App() {
 
   return (
     <div className={`app${selectedPerson ? ' has-panel' : ''}`}>
-      <header className="topbar">
-        <div className="brand">
-          <span className="brand-logo">
-            <TreeIcon size={22} />
-          </span>
-          <div className="brand-text">
-            <span className="brand-name">Raíz</span>
-            <span className="brand-sub">{data.title}</span>
-          </div>
+      <div className="floating-brand" aria-hidden="true">
+        <span className="brand-logo">
+          <TreeIcon size={22} />
+        </span>
+        <div className="brand-text">
+          <span className="brand-name">Raíz</span>
+          <span className="brand-sub">{data.title}</span>
         </div>
-        <div className="topbar-actions">
-          <button
-            type="button"
-            className="icon-button"
-            onClick={() => setSearchOpen(true)}
-            aria-label="Buscar personas"
-          >
-            <SearchIcon />
-          </button>
-          <button
-            type="button"
-            className="icon-button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Abrir menú"
-          >
-            <MenuIcon />
-          </button>
-        </div>
-      </header>
+      </div>
+
+      <div className="floating-actions">
+        <button
+          type="button"
+          className="icon-button glass"
+          onClick={() => setSearchOpen(true)}
+          aria-label="Buscar personas"
+        >
+          <SearchIcon />
+        </button>
+        <button
+          type="button"
+          className="icon-button glass"
+          onClick={() => setMenuOpen(true)}
+          aria-label="Abrir menú"
+        >
+          <MenuIcon />
+        </button>
+      </div>
 
       <main className="stage">
         <TreeCanvas
