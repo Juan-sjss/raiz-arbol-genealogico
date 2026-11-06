@@ -51,7 +51,7 @@ const EMPTY_TREE: TreeData = {
 }
 
 export function TreeProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<TreeData>(() => loadTree() ?? sampleTree())
+  const [data, setData] = useState<TreeData>(() => loadTree() ?? EMPTY_TREE)
   const [saveState, setSaveState] = useState<'saved' | 'error'>('saved')
   const [toast, setToast] = useState<Toast | null>(null)
   const toastTimer = useRef<number | undefined>(undefined)
