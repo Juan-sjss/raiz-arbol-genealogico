@@ -12,6 +12,38 @@ interface TreeCanvasProps {
   onSelect: (id: string | null) => void
 }
 
+interface Point {
+  x: number
+  y: number
+}
+
+const round = (value: number) => Math.round(value * 100) / 100
+
+/** Curva suave (Catmull-Rom convertida a Bézier) para dibujar formas orgánicas. */
+function smoothPath(points: Point[], closed: boolean): string {
+  if (points.length < 2) return ''
+  const count = points.length
+  const at = (index: number) =>
+    closed
+      ? points[(index + count) % count]
+      : points[Math.min(count - 1, Math.max(0, index))]
+
+  let d = `M ${round(points[0].x)} ${round(points[0].y)}`
+  const last = closed ? count : count - 1
+  for (let i = 0; i < last; i++) {
+    const p0 = at(i - 1)
+    const p1 = at(i)
+    const p2 = at(i + 1)
+    const p3 = at(i + 2)
+    const c1x = p1.x + (p2.x - p0.x) / 6
+    const c1y = p1.y + (p2.y - p0.y) / 6
+    const c2x = p2.x - (p3.x - p1.x) / 6
+    const c2y = p2.y - (p3.y - p1.y) / 6
+    d += ` C ${round(c1x)} ${round(c1y)}, ${round(c2x)} ${round(c2y)}, ${round(p2.x)} ${round(p2.y)}`
+  }
+  return closed ? `${d} Z` : d
+}
+
 export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCanvasProps) {
   const layout = useMemo(
     () => layoutTree(data.people, data.relationships),
@@ -208,45 +240,119 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
           ))}
           <g className="trunk-center" aria-hidden="true">
             {(() => {
+              if (!layout.positions.size) return null
               // Tronco central alineado con el centro real del árbol (centroide de la 1ª fila).
               const tops = [...layout.positions.values()]
               const minY = Math.min(...tops.map((p) => p.y))
               const topRow = tops.filter((p) => p.y === minY).map((p) => p.x)
               const cx = topRow.length ? topRow.reduce((a, b) => a + b, 0) / topRow.length + CARD_W / 2 : layout.width / 2
               const h = layout.height
-              const rows = Math.max(1, layout.generations)
-              const baseW = 34
-              const segs: Array<{ y1: number; y2: number; w: number }> = []
-              for (let g = 0; g < rows; g++) {
-                const y1 = 140 + g * ((h - 200) / rows)
-                const y2 = 140 + (g + 1) * ((h - 200) / rows)
-                segs.push({ y1, y2, w: baseW - g * 4 })
+              const top = 150
+              const bottom = Math.max(top + 120, h - 60)
+              const span = bottom - top
+              // Se ensancha hacia la base, como un tronco real con sus raíces.
+              const halfWidth = (t: number) => 38 + t * 18 + Math.sin(t * Math.PI) * 5
+
+              // Silueta con bordes irregulares: nada de rectas ni óvalos.
+              const right: Point[] = []
+              const left: Point[] = []
+              const steps = 20
+              for (let i = 0; i <= steps; i++) {
+                const t = i / steps
+                const y = top + t * span
+                const w = halfWidth(t)
+                const sway = Math.sin(t * Math.PI * 2.6 + 0.6) * 2.4 + Math.sin(t * Math.PI * 6.2) * 1.2
+                const notch = Math.sin(t * Math.PI * 4.4 + 1.1) * 1.7
+                right.push({ x: cx + w + sway, y })
+                left.push({ x: cx - w + sway + notch, y })
               }
+              const outline: Point[] = [
+                ...right,
+                { x: cx + halfWidth(1) * 0.45, y: bottom + 5 },
+                { x: cx, y: bottom + 9 },
+                { x: cx - halfWidth(1) * 0.45, y: bottom + 5 },
+                ...left.reverse(),
+                { x: cx - 20, y: top - 2 },
+                { x: cx, y: top - 6 },
+                { x: cx + 20, y: top - 2 },
+              ]
+
+              // Vetas de corteza: curvas largas que siguen la madera.
+              const grain = (offset: number, wobble: number, from = 0.04, to = 0.95) => {
+                const points: Point[] = []
+                const segments = 12
+                for (let i = 0; i <= segments; i++) {
+                  const t = from + ((to - from) * i) / segments
+                  const w = halfWidth(t)
+                  points.push({
+                    x: cx + offset * w * 0.86 + Math.sin(t * Math.PI * 5.4 + wobble) * 1.5,
+                    y: top + t * span,
+                  })
+                }
+                return smoothPath(points, false)
+              }
+
+              const grooves = [
+                { offset: -0.62, wobble: 0.4, width: 1.2, opacity: 0.32 },
+                { offset: -0.28, wobble: 2.3, width: 1.7, opacity: 0.4 },
+                { offset: 0.08, wobble: 4.1, width: 1.3, opacity: 0.3 },
+                { offset: 0.42, wobble: 1.4, width: 1.9, opacity: 0.42 },
+                { offset: 0.68, wobble: 3.2, width: 1.2, opacity: 0.28 },
+              ]
+
+              const roots = Array.from({ length: 9 }, (_, index) => {
+                const side = index % 2 === 0 ? 1 : -1
+                const step = Math.floor(index / 2) + 1
+                const spread = 26 + step * 23
+                const startY = bottom - 16 + step * 2
+                const endY = bottom + 42 - step * 3
+                return {
+                  d: `M ${round(cx + side * 7)} ${round(startY)} C ${round(cx + side * spread * 0.34)} ${round(startY + 12)}, ${round(cx + side * spread * 0.7)} ${round(endY - 12)}, ${round(cx + side * spread)} ${round(endY)}`,
+                  width: Math.max(1.5, 3.6 - step * 0.42),
+                  opacity: Math.max(0.28, 0.62 - step * 0.05),
+                }
+              })
+
               return (
                 <>
-                  {segs.map((s, i) => (
-                    <g key={`seg-${i}`}>
+                  <defs>
+                    <linearGradient
+                      id="trunk-wood"
+                      gradientUnits="userSpaceOnUse"
+                      x1={cx - 68}
+                      y1={0}
+                      x2={cx + 68}
+                      y2={0}
+                    >
+                      <stop offset="0%" className="trunk-stop-edge" />
+                      <stop offset="14%" className="trunk-stop-edge" />
+                      <stop offset="36%" className="trunk-stop-light" />
+                      <stop offset="64%" className="trunk-stop-mid" />
+                      <stop offset="88%" className="trunk-stop-edge" />
+                      <stop offset="100%" className="trunk-stop-edge" />
+                    </linearGradient>
+                  </defs>
+                  <g className="trunk-roots">
+                    {roots.map((root, index) => (
                       <path
-                        d={`M ${cx - s.w} ${s.y1} C ${cx - s.w - 14} ${(s.y1 + s.y2) / 2}, ${cx + s.w + 14} ${(s.y1 + s.y2) / 2}, ${cx + s.w} ${s.y2} L ${cx + s.w} ${s.y2 + 6} C ${cx + s.w + 18} ${(s.y1 + s.y2) / 2}, ${cx - s.w - 18} ${(s.y1 + s.y2) / 2}, ${cx - s.w} ${s.y1 + 6} Z`}
-                        className="trunk-segment"
+                        key={`root-${index}`}
+                        className="root-lines"
+                        d={root.d}
+                        style={{ strokeWidth: root.width, opacity: root.opacity }}
                       />
-                      <path
-                        d={`M ${cx - s.w * 0.35} ${s.y1 + 10} c -4 14, 3 28, 0 ${Math.max(20, s.y2 - s.y1 - 20)} M ${cx + s.w * 0.3} ${s.y1 + 16} c 3 10, -3 20, 0 ${Math.max(16, s.y2 - s.y1 - 26)} M ${cx - s.w * 0.1} ${s.y1 + 26} c -2 8, 2 16, 0 ${Math.max(12, s.y2 - s.y1 - 36)}`}
-                        className="trunk-grain"
-                      />
-                      <ellipse cx={cx} cy={s.y1 + 10} rx={s.w * 0.5} ry={s.w * 0.32} className="trunk-knot" />
-                    </g>
+                    ))}
+                  </g>
+                  <path className="trunk-wood" d={smoothPath(outline, true)} />
+                  <path className="trunk-shade" d={grain(0.62, 2.1)} />
+                  <path className="trunk-highlight" d={grain(-0.44, 0.9)} />
+                  {grooves.map((groove, index) => (
+                    <path
+                      key={`groove-${index}`}
+                      className="trunk-groove"
+                      d={grain(groove.offset, groove.wobble)}
+                      style={{ strokeWidth: groove.width, opacity: groove.opacity }}
+                    />
                   ))}
-                  {edges.childPaths.map((edge) => (
-                    <path key={`t-${edge.key}`} d={edge.d} className="edge edge-child branch-twig" style={{ strokeWidth: 3 }} />
-                  ))}
-                  <path
-                    d={Array.from({ length: 11 }, (_, i) => {
-                      const x = cx + (i - 5) * 30
-                      return `M ${x} ${h - 8} c ${(i % 2 ? 1 : -1) * 16} 16, ${(i % 2 ? -1 : 1) * 26} 24, ${(i - 5) * 42} 44`
-                    }).join(' ')}
-                    className="root-lines"
-                  />
                 </>
               )
             })()}
