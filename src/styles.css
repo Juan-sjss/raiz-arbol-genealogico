@@ -702,13 +702,52 @@ ul {
   top: 50%;
   left: 50%;
   width: min(420px, calc(100% - 32px));
-  padding: 28px 24px 24px;
+  padding: 28px 24px 22px;
   text-align: center;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  box-shadow: var(--shadow);
+  background:
+    repeating-linear-gradient(90deg, rgba(107, 68, 38, 0.035) 0 1px, transparent 1px 7px),
+    linear-gradient(180deg, rgba(255, 252, 242, 0.7), transparent 55%),
+    var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 26px;
+  box-shadow:
+    var(--shadow),
+    0 0 0 6px color-mix(in srgb, var(--branch) 12%, transparent),
+    0 0 0 7px color-mix(in srgb, var(--branch-deep) 22%, transparent);
   transform: translate(-50%, -50%);
+}
+
+.empty-state::before {
+  content: '';
+  position: absolute;
+  top: -16px;
+  right: 26px;
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(150deg, #9ab97a, #5f7a52);
+  border-radius: 0 100% 0 100%;
+  box-shadow: 0 5px 12px rgba(42, 33, 22, 0.22);
+  transform: rotate(-16deg);
+}
+
+.empty-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.empty-kicker-leaf {
+  width: 8px;
+  height: 8px;
+  border-radius: 0 100% 0 100%;
+  background: var(--accent);
+  transform: rotate(-18deg);
 }
 
 .empty-icon {
@@ -718,8 +757,11 @@ ul {
   height: 64px;
   margin: 0 auto 14px;
   border-radius: 20px;
-  background: var(--accent-soft);
-  color: var(--accent-deep);
+  background:
+    radial-gradient(120% 120% at 25% 10%, rgba(255, 255, 255, 0.35), transparent 60%),
+    linear-gradient(155deg, var(--branch), var(--branch-deep));
+  color: #f7f2e4;
+  box-shadow: inset 0 1px 0 rgba(255, 240, 210, 0.24), 0 8px 18px rgba(42, 33, 22, 0.2);
 }
 
 .empty-state h2 {
@@ -740,6 +782,15 @@ ul {
   flex-direction: column;
   gap: 9px;
   margin-top: 18px;
+}
+
+.empty-note {
+  margin-top: 14px !important;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  font-size: 11.5px !important;
+  line-height: 1.5 !important;
+  color: var(--ink-faint) !important;
 }
 
 /* ---------- Botones ---------- */
@@ -1834,4 +1885,398 @@ ul {
 @keyframes export-slide {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(300%); }
+}
+
+/* ---------- Introducción guiada (madera y hojas) ---------- */
+
+.tour {
+  --wood-1: #7a4d29;
+  --wood-2: #5a381f;
+  --wood-3: #412713;
+  --wood-cream: #f7ecd6;
+  --wood-cream-soft: #e7d6b7;
+  --wood-gold: #d9a85a;
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  font-family: var(--font-body);
+}
+
+.tour-catcher {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
+.tour-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(201, 148, 74, 0.12), transparent 55%),
+    rgba(24, 17, 11, 0.72);
+  animation: tour-fade 0.24s ease;
+}
+
+.tour-spot {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  border: 1px solid rgba(255, 240, 210, 0.55);
+  box-shadow:
+    0 0 0 9999px rgba(24, 17, 11, 0.7),
+    0 0 0 2px rgba(217, 168, 90, 0.9),
+    0 0 28px 3px rgba(217, 168, 90, 0.4);
+}
+
+.tour-bubble {
+  position: absolute;
+  z-index: 3;
+  max-height: none;
+  padding: 22px 22px 18px;
+  border: 1px solid rgba(255, 230, 190, 0.3);
+  border-radius: 22px;
+  color: var(--wood-cream);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 236, 200, 0.05) 0 1px, transparent 1px 7px),
+    radial-gradient(120% 90% at 14% 0%, rgba(160, 105, 58, 0.55), transparent 62%),
+    linear-gradient(158deg, #6b4426, var(--wood-2) 62%, var(--wood-3));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 210, 0.18),
+    inset 0 -4px 10px rgba(0, 0, 0, 0.3),
+    0 24px 58px rgba(0, 0, 0, 0.5);
+  outline: none;
+  pointer-events: auto;
+  animation: tour-fade 0.24s ease;
+}
+
+.tour-bubble:focus-visible {
+  outline: none;
+}
+
+.tour-bubble--center {
+  position: fixed;
+}
+
+.tour-bubble--final {
+  padding-bottom: 16px;
+}
+
+.tour-content {
+  position: relative;
+  z-index: 2;
+  max-height: min(76dvh, 660px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+
+.tour-ornament {
+  position: absolute;
+  z-index: 1;
+  width: 84px;
+  height: 84px;
+  color: rgba(154, 185, 122, 0.34);
+  pointer-events: none;
+}
+
+.tour-ornament--top {
+  top: -6px;
+  right: -8px;
+  transform: rotate(14deg);
+}
+
+.tour-ornament--bottom {
+  bottom: -10px;
+  left: -10px;
+  transform: rotate(194deg);
+}
+
+.tour-arrow {
+  position: absolute;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  background: #5f3b21;
+  border-top: 1px solid rgba(255, 230, 190, 0.3);
+  border-left: 1px solid rgba(255, 230, 190, 0.3);
+  transform: rotate(45deg);
+}
+
+.tour-bubble--below .tour-arrow {
+  top: -9px;
+}
+
+.tour-bubble--above .tour-arrow {
+  bottom: -9px;
+  transform: rotate(225deg);
+}
+
+.tour-kicker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--wood-gold);
+}
+
+.tour-kicker-leaf {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 0 100% 0 100%;
+  background: linear-gradient(140deg, #b9cd90, #6d8a50);
+  box-shadow: 0 0 0 1px rgba(20, 12, 6, 0.3);
+  transform: rotate(-18deg);
+}
+
+.tour-title {
+  margin-top: 9px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: #fbf3e1;
+}
+
+.tour-body {
+  margin-top: 9px;
+  font-size: 13.5px;
+  line-height: 1.62;
+  color: var(--wood-cream-soft);
+}
+
+.tour-body strong {
+  color: #fff7e7;
+  font-weight: 600;
+}
+
+.tour-note {
+  margin-top: 12px;
+  padding: 9px 11px;
+  border-left: 3px solid var(--wood-gold);
+  border-radius: 4px 12px 12px 4px;
+  background: rgba(20, 12, 6, 0.28);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #dcc9a7;
+}
+
+.tour-footer {
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(255, 235, 200, 0.16);
+}
+
+.tour-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.tour-dot {
+  width: 17px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 240, 210, 0.2);
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.tour-dot.is-active {
+  width: 27px;
+  background: var(--wood-gold);
+}
+
+.tour-dot.is-done {
+  background: rgba(154, 185, 122, 0.82);
+}
+
+.tour-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tour-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, filter 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tour-btn--ghost {
+  margin-right: auto;
+  border: 1px solid rgba(255, 235, 200, 0.26);
+  background: rgba(255, 240, 210, 0.04);
+  color: #e8d8bd;
+}
+
+.tour-btn--ghost:hover {
+  background: rgba(255, 240, 210, 0.12);
+}
+
+.tour-btn--quiet {
+  padding: 8px 4px;
+  border: none;
+  background: none;
+  color: #c9b491;
+}
+
+.tour-btn--quiet:hover {
+  color: #f0e2c8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tour-btn--next {
+  border: 1px solid rgba(40, 55, 30, 0.6);
+  background: linear-gradient(155deg, #a8c184, #6d8a50);
+  color: #1d2a15;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 6px 14px rgba(0, 0, 0, 0.28);
+}
+
+.tour-btn--next:hover {
+  filter: brightness(1.05);
+}
+
+.tour-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.tour-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(255, 235, 200, 0.2);
+  border-radius: 14px;
+  background: rgba(20, 12, 6, 0.24);
+  color: #f2e4c9;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tour-choice:hover {
+  background: rgba(255, 240, 210, 0.1);
+  border-color: rgba(255, 235, 200, 0.42);
+}
+
+.tour-choice--primary {
+  border-color: rgba(168, 193, 132, 0.55);
+  background: linear-gradient(160deg, rgba(154, 185, 122, 0.24), rgba(95, 122, 82, 0.12));
+}
+
+.tour-choice--primary:hover {
+  background: linear-gradient(160deg, rgba(154, 185, 122, 0.34), rgba(95, 122, 82, 0.2));
+}
+
+.tour-choice-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 12px;
+  background: linear-gradient(155deg, #a8c184, #6d8a50);
+  color: #1d2a15;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.tour-choice-icon--gold {
+  background: linear-gradient(155deg, #e2bc7d, #b4803e);
+  color: #2b1c0c;
+}
+
+.tour-choice-text strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fbf3e1;
+}
+
+.tour-choice-text small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #cdb995;
+}
+
+.tour-mark {
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 15px;
+  border: 3px solid #3b2413;
+  border-radius: 50%;
+  background:
+    radial-gradient(120% 120% at 30% 20%, rgba(255, 220, 170, 0.16), transparent 55%),
+    radial-gradient(circle at 50% 45%, #8a5a30, #4a2d18 74%);
+  box-shadow:
+    inset 0 2px 6px rgba(255, 220, 170, 0.22),
+    inset 0 -7px 14px rgba(0, 0, 0, 0.4),
+    0 10px 22px rgba(0, 0, 0, 0.35);
+}
+
+.tour-mark-art {
+  width: 82px;
+  height: 72px;
+}
+
+@keyframes tour-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 430px) {
+  .tour-bubble {
+    padding: 20px 18px 16px;
+  }
+
+  .tour-title {
+    font-size: 21px;
+  }
+
+  .tour-body {
+    font-size: 13px;
+  }
+
+  .tour-mark {
+    width: 92px;
+    height: 92px;
+  }
+
+  .tour-mark-art {
+    width: 72px;
+    height: 63px;
+  }
 }

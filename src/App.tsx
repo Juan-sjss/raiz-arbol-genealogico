@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { MenuIcon, PlusIcon, SearchIcon, SparklesIcon, TreeIcon } from './components/Icons'
 import { MenuSheet } from './components/MenuSheet'
+import { Onboarding } from './components/Onboarding'
 import { PersonForm } from './components/PersonForm'
 import { PetForm } from './components/PetForm'
 import { PersonPanel, type RelationKind } from './components/PersonPanel'
@@ -13,6 +14,7 @@ import { exportTree, readFileAsText } from './lib/backup'
 import { exportImage } from './lib/exportImage'
 import { exportPdf } from './lib/exportPdf'
 import type { ExportFormat } from './components/MenuSheet'
+import { hasSeenOnboarding } from './lib/onboarding'
 import { parseTree } from './lib/storage'
 import { childrenOf, parentsOf, partnersOf } from './lib/tree'
 import { useTree } from './store/TreeStore'
@@ -78,6 +80,10 @@ export default function App() {
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  // La introducción aparece solo la primera vez y solo si el árbol está vacío.
+  const [onboardingOpen, setOnboardingOpen] = useState(
+    () => data.people.length === 0 && !hasSeenOnboarding(),
+  )
   const [exportFormat, setExportFormat] = useState<ExportFormat>('json')
   const [exportMultiPage, setExportMultiPage] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -317,6 +323,7 @@ export default function App() {
           className="icon-button glass"
           onClick={() => setSearchOpen(true)}
           aria-label="Buscar personas"
+          data-tour="search"
         >
           <SearchIcon />
         </button>
@@ -325,6 +332,7 @@ export default function App() {
           className="icon-button glass"
           onClick={() => setMenuOpen(true)}
           aria-label="Abrir menú"
+          data-tour="menu"
         >
           <MenuIcon />
         </button>
@@ -339,7 +347,11 @@ export default function App() {
         />
 
         {data.people.length === 0 ? (
-          <div className="empty-state">
+          <div className="empty-state" data-tour="empty">
+            <span className="empty-kicker">
+              <span className="empty-kicker-leaf" aria-hidden="true" />
+              La primera semilla
+            </span>
             <span className="empty-icon">
               <TreeIcon size={34} />
             </span>
@@ -353,13 +365,17 @@ export default function App() {
                 type="button"
                 className="primary-button"
                 onClick={() => openCreate({ type: 'none' })}
+                data-tour="first-person"
               >
                 <PlusIcon size={18} /> Añadir la primera persona
               </button>
               <button type="button" className="ghost-button" onClick={askLoadSample}>
-                <SparklesIcon size={17} /> Ver ejemplo
+                <SparklesIcon size={17} /> Ver árbol de ejemplo
               </button>
             </div>
+            <p className="empty-note">
+              El ejemplo solo se carga si lo eliges tú. También puedes empezar vacío y crecer a tu ritmo.
+            </p>
           </div>
         ) : null}
 
@@ -396,6 +412,7 @@ export default function App() {
           className="fab"
           onClick={() => openCreate({ type: 'none' })}
           aria-label="Añadir persona"
+          data-tour="add"
         >
           <PlusIcon size={22} />
           <span>Añadir</span>
@@ -458,6 +475,10 @@ export default function App() {
         }}
         onLoadSample={askLoadSample}
         onErase={askErase}
+        onShowIntro={() => {
+          setMenuOpen(false)
+          setOnboardingOpen(true)
+        }}
         onClose={() => setMenuOpen(false)}
       />
 
@@ -474,6 +495,16 @@ export default function App() {
           onClose={() => setConfirm(null)}
         />
       ) : null}
+
+      <Onboarding
+        open={onboardingOpen}
+        personCount={data.people.length}
+        onClose={() => setOnboardingOpen(false)}
+        onLoadSample={() => {
+          loadSample()
+          setSelectedId(null)
+        }}
+      />
 
       <Toast />
 

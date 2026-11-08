@@ -293,7 +293,7 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
         )}
       </div>
 
-      <div className="zoom-controls" data-no-pan onClick={(event) => event.stopPropagation()}>
+      <div className="zoom-controls" data-no-pan data-tour="zoom" onClick={(event) => event.stopPropagation()}>
         <button type="button" className="icon-button" onClick={() => zoomBy(1.25)} aria-label="Acercar">
           <ZoomInIcon />
         </button>

@@ -28,6 +28,7 @@ interface MenuSheetProps {
   onImport: () => void
   onLoadSample: () => void
   onErase: () => void
+  onShowIntro: () => void
   onClose: () => void
 }
 
@@ -47,6 +48,7 @@ export function MenuSheet({
   onImport,
   onLoadSample,
   onErase,
+  onShowIntro,
   onClose,
 }: MenuSheetProps) {
   if (!open) return null
@@ -161,6 +163,19 @@ export function MenuSheet({
               <span>
                 <strong>{theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}</strong>
                 <small>Se guarda para la próxima vez</small>
+              </span>
+            </button>
+          </section>
+
+          <section className="menu-section">
+            <h3>Ayuda</h3>
+            <button type="button" className="menu-item" onClick={onShowIntro}>
+              <span className="menu-icon">
+                <BookIcon />
+              </span>
+              <span>
+                <strong>Ver la introducción</strong>
+                <small>Repasa los botones y cómo crear a la primera persona</small>
               </span>
             </button>
           </section>
