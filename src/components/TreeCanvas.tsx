@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { usePanZoom } from '../hooks/usePanZoom'
 import { CARD_H, CARD_W, layoutTree } from '../lib/layout'
 import type { TreeData } from '../types'
-import { FitIcon, ZoomInIcon, ZoomOutIcon } from './Icons'
+import { FitIcon, LeafIcon, ZoomInIcon, ZoomOutIcon } from './Icons'
 import { PersonCard } from './PersonCard'
 
 interface TreeCanvasProps {
@@ -42,6 +42,84 @@ function smoothPath(points: Point[], closed: boolean): string {
     d += ` C ${round(c1x)} ${round(c1y)}, ${round(c2x)} ${round(c2y)}, ${round(p2.x)} ${round(p2.y)}`
   }
   return closed ? `${d} Z` : d
+}
+
+const LEAF_PATH = 'M0 0 C3.4 -4.6, 10.6 -5.2, 15 0 C10.6 5.2, 3.4 4.6, 0 0 Z'
+const LEAF_VEIN = 'M1.6 0 C5.4 -1.2, 9.8 -1.1, 13.4 0'
+const PETAL_PATH = 'M0 0 C-2.4 -1.8, -2.6 -5, 0 -6.2 C2.6 -5, 2.4 -1.8, 0 0 Z'
+const PETAL_ANGLES = [0, 72, 144, 216, 288]
+
+function cubicPoint(p0: Point, c1: Point, c2: Point, p1: Point, t: number): Point {
+  const mt = 1 - t
+  return {
+    x: mt * mt * mt * p0.x + 3 * mt * mt * t * c1.x + 3 * mt * t * t * c2.x + t * t * t * p1.x,
+    y: mt * mt * mt * p0.y + 3 * mt * mt * t * c1.y + 3 * mt * t * t * c2.y + t * t * t * p1.y,
+  }
+}
+
+function cubicTangent(p0: Point, c1: Point, c2: Point, p1: Point, t: number): Point {
+  const mt = 1 - t
+  return {
+    x: 3 * mt * mt * (c1.x - p0.x) + 6 * mt * t * (c2.x - c1.x) + 3 * t * t * (p1.x - c2.x),
+    y: 3 * mt * mt * (c1.y - p0.y) + 6 * mt * t * (c2.y - c1.y) + 3 * t * t * (p1.y - c2.y),
+  }
+}
+
+function unitVector(point: Point): Point {
+  const length = Math.hypot(point.x, point.y)
+  return length ? { x: point.x / length, y: point.y / length } : { x: 0, y: 1 }
+}
+
+/** Forma afilada que sigue una curva: sirve para raíces macizas. */
+function ribbonPath(p0: Point, c1: Point, c2: Point, p1: Point, width: number): string {
+  const left: Point[] = []
+  const right: Point[] = []
+  const steps = 12
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps
+    const point = cubicPoint(p0, c1, c2, p1, t)
+    const direction = unitVector(cubicTangent(p0, c1, c2, p1, t))
+    const half = (width * Math.pow(1 - t, 1.25)) / 2 + 0.4
+    left.push({ x: point.x - direction.y * half, y: point.y + direction.x * half })
+    right.push({ x: point.x + direction.y * half, y: point.y - direction.x * half })
+  }
+  return smoothPath([...left, ...right.reverse()], true)
+}
+
+interface Decoration {
+  kind: 'leaf' | 'flower'
+  x: number
+  y: number
+  angle: number
+  scale: number
+}
+
+function BranchLeaf({ x, y, angle, scale }: Omit<Decoration, 'kind'>) {
+  return (
+    <g transform={`translate(${round(x)} ${round(y)}) rotate(${round(angle)}) scale(${scale})`}>
+      <path className="edge-leaf" d={LEAF_PATH} />
+      <path className="edge-leaf-vein" d={LEAF_VEIN} />
+    </g>
+  )
+}
+
+function BranchFlower({ x, y, angle, scale }: Omit<Decoration, 'kind'>) {
+  return (
+    <g
+      className="branch-flower"
+      transform={`translate(${round(x)} ${round(y)}) rotate(${round(angle)}) scale(${scale})`}
+    >
+      {PETAL_ANGLES.map((degrees) => (
+        <path
+          key={degrees}
+          className="branch-flower-petal"
+          d={PETAL_PATH}
+          transform={`rotate(${degrees})`}
+        />
+      ))}
+      <circle className="branch-flower-center" r={1.6} />
+    </g>
+  )
 }
 
 export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCanvasProps) {
@@ -98,14 +176,13 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
       parentGroups.set(rel.to, list)
     }
 
+    type Twig = { d: string; decoration: Decoration }
     type ChildPath = {
       key: string
       d: string
       thickness: number
       bark: string
-      twig: string
-      twigEnd: string
-      leaf: string
+      twigs: Twig[]
     }
     const childPaths: ChildPath[] = []
     for (const [childId, parentIds] of parentGroups) {
@@ -130,21 +207,89 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
       const endX = child.x + CARD_W / 2
       const endY = child.y
       const drop = Math.max(24, endY - bottom)
-      // Tronco con un leve zigzag orgánico: sale vertical, se desvía y brota en la hoja.
+      // Rama con un leve zigzag orgánico: sale vertical, se desvía y brota en la hoja.
       const mx = startX + (endX - startX) * 0.5
       const t1y = bottom + drop * 0.28
       const t2y = bottom + drop * 0.58
       const t3y = bottom + drop * 0.82
       const wiggle = ((parentPoints.length + childId.length) % 3) - 1
       const thickness = Math.max(6, Math.min(13, 13 - (endY / Math.max(1, layout.height)) * 4 - (childId.length % 3)))
+
+      const p0 = { x: startX, y: bottom - 6 }
+      const c1 = { x: startX, y: t1y }
+      const c2 = { x: mx + wiggle * 14, y: t1y }
+      const p1 = { x: mx + wiggle * 14, y: t2y }
+      const c3 = { x: mx + wiggle * 14, y: t3y }
+      const c4 = { x: endX, y: t3y }
+      const p2 = { x: endX, y: endY }
+      const pointAt = (u: number) =>
+        u <= 0.5
+          ? cubicPoint(p0, c1, c2, p1, u * 2)
+          : cubicPoint(p1, c3, c4, p2, (u - 0.5) * 2)
+      const directionAt = (u: number) =>
+        unitVector(
+          u <= 0.5
+            ? cubicTangent(p0, c1, c2, p1, u * 2)
+            : cubicTangent(p1, c3, c4, p2, (u - 0.5) * 2),
+        )
+
+      // Marcas de corteza centradas en la rama: siempre quedan pegadas a ella.
+      const bark = [0.2, 0.44, 0.68]
+        .map((u, index) => {
+          const point = pointAt(u)
+          const direction = directionAt(u)
+          const normal = { x: -direction.y, y: direction.x }
+          const half = thickness * (0.17 + (index % 2) * 0.04)
+          const drift = (index % 2 ? 1 : -1) * 2.4
+          const start = {
+            x: point.x - normal.x * half + direction.x * drift,
+            y: point.y - normal.y * half + direction.y * drift,
+          }
+          const end = {
+            x: point.x + normal.x * half + direction.x * drift,
+            y: point.y + normal.y * half + direction.y * drift,
+          }
+          return `M ${round(start.x)} ${round(start.y)} L ${round(end.x)} ${round(end.y)}`
+        })
+        .join(' ')
+
+      const seed = [...childId].reduce((sum, character) => sum + character.charCodeAt(0), 0)
+      const twigs: Twig[] = []
+      for (let index = 0; index < 2; index++) {
+        const u = 0.31 + index * 0.3 + ((seed >> (index * 2)) & 3) * 0.018
+        const point = pointAt(u)
+        const direction = directionAt(u)
+        const side = (seed >> (index + 3)) & 1 ? 1 : -1
+        const normal = { x: -direction.y * side, y: direction.x * side }
+        const length = 11 + ((seed >> (index + 1)) & 3) * 2.4
+        const end = {
+          x: point.x + normal.x * length - direction.x * (3 + index),
+          y: point.y + normal.y * length - direction.y * (3 + index),
+        }
+        const control = {
+          x: point.x + normal.x * length * 0.55 - direction.x * 1.6,
+          y: point.y + normal.y * length * 0.55 - direction.y * 1.6,
+        }
+        const angle = (Math.atan2(end.y - point.y, end.x - point.x) * 180) / Math.PI
+        const kind: Decoration['kind'] = (seed + index * 3) % 5 === 0 ? 'flower' : 'leaf'
+        twigs.push({
+          d: `M ${round(point.x)} ${round(point.y)} Q ${round(control.x)} ${round(control.y)} ${round(end.x)} ${round(end.y)}`,
+          decoration: {
+            kind,
+            x: end.x,
+            y: end.y,
+            angle,
+            scale: kind === 'flower' ? 1.1 : 0.78 + ((seed >> index) & 1) * 0.16,
+          },
+        })
+      }
+
       childPaths.push({
         key: childId,
         d: `M ${startX} ${bottom - 6} C ${startX} ${t1y}, ${mx + wiggle * 14} ${t1y}, ${mx + wiggle * 14} ${t2y} C ${mx + wiggle * 14} ${t3y}, ${endX} ${t3y}, ${endX} ${endY}`,
         thickness,
-        bark: `M ${startX + wiggle * 14} ${bottom + drop * 0.18} l -6 ${drop * 0.22} M ${mx + wiggle * 10} ${bottom + drop * 0.42} l 7 ${drop * 0.18} M ${mx - wiggle * 8} ${bottom + drop * 0.62} l -5 ${drop * 0.12}`,
-        twig: `M ${mx + wiggle * 6} ${bottom + drop * 0.52} c -4 ${drop * 0.06}, -10 ${drop * 0.1}, ${-18} ${drop * 0.04}`,
-        twigEnd: `M ${endX + (mx - endX) * 0.15} ${endY - drop * 0.12} c 2 ${drop * 0.08}, -3 ${drop * 0.14}, ${-7} ${drop * 0.1}`,
-        leaf: `M ${endX} ${endY - 8} q 4 -6 10 -4 q -2 8 -10 4`,
+        bark,
+        twigs,
       })
     }
 
@@ -214,19 +359,32 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
               <path
                 className="edge edge-child branch-bark"
                 d={edge.bark}
-                style={{ strokeWidth: Math.max(1.4, edge.thickness * 0.22) }}
+                style={{ strokeWidth: Math.max(1.2, edge.thickness * 0.18) }}
               />
-              <path
-                className="edge edge-child branch-twig"
-                d={edge.twig}
-                style={{ strokeWidth: Math.max(2, edge.thickness * 0.34) }}
-              />
-              <path
-                className="edge edge-child branch-twig"
-                d={edge.twigEnd}
-                style={{ strokeWidth: Math.max(1.6, edge.thickness * 0.28) }}
-              />
-              <path className="edge-leaf" d={edge.leaf} />
+              {edge.twigs.map((twig) => (
+                <g key={twig.d}>
+                  <path
+                    className="branch-twig"
+                    d={twig.d}
+                    style={{ strokeWidth: Math.max(1.4, edge.thickness * 0.22) }}
+                  />
+                  {twig.decoration.kind === 'flower' ? (
+                    <BranchFlower
+                      x={twig.decoration.x}
+                      y={twig.decoration.y}
+                      angle={twig.decoration.angle}
+                      scale={twig.decoration.scale}
+                    />
+                  ) : (
+                    <BranchLeaf
+                      x={twig.decoration.x}
+                      y={twig.decoration.y}
+                      angle={twig.decoration.angle}
+                      scale={twig.decoration.scale}
+                    />
+                  )}
+                </g>
+              ))}
             </g>
           ))}
           {edges.partnerPaths.map((edge) => (
@@ -247,11 +405,13 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
               const topRow = tops.filter((p) => p.y === minY).map((p) => p.x)
               const cx = topRow.length ? topRow.reduce((a, b) => a + b, 0) / topRow.length + CARD_W / 2 : layout.width / 2
               const h = layout.height
-              const top = 150
-              const bottom = Math.max(top + 120, h - 60)
+              // El tronco nace justo debajo de la primera generación: así las
+              // hojas de arriba no lo tapan y se ve completo hasta las raíces.
+              const top = minY + CARD_H + 14
+              const bottom = Math.max(top + 50, h - 56)
               const span = bottom - top
               // Se ensancha hacia la base, como un tronco real con sus raíces.
-              const halfWidth = (t: number) => 38 + t * 18 + Math.sin(t * Math.PI) * 5
+              const halfWidth = (t: number) => 38 + t * 20 + Math.sin(t * Math.PI) * 5
 
               // Silueta con bordes irregulares: nada de rectas ni óvalos.
               const right: Point[] = []
@@ -300,16 +460,42 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
                 { offset: 0.68, wobble: 3.2, width: 1.2, opacity: 0.28 },
               ]
 
-              const roots = Array.from({ length: 9 }, (_, index) => {
-                const side = index % 2 === 0 ? 1 : -1
-                const step = Math.floor(index / 2) + 1
-                const spread = 26 + step * 23
-                const startY = bottom - 16 + step * 2
-                const endY = bottom + 42 - step * 3
+              const rootOffsets = [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1]
+              const roots = rootOffsets.map((offset, index) => {
+                const startX = cx + offset * 30
+                const startY = bottom - 6 + Math.abs(offset) * 4
+                const endX = cx + offset * 158
+                const endY = bottom + 38 + (1 - Math.abs(offset)) * 10 + ((index * 7) % 5) * 1.4
+                const baseWidth = 13.5 - Math.abs(offset) * 4.6
+                const c1 = {
+                  x: startX + (endX - startX) * 0.18,
+                  y: startY + 10 + Math.abs(offset) * 4,
+                }
+                const c2 = {
+                  x: startX + (endX - startX) * 0.72,
+                  y: endY - 10,
+                }
                 return {
-                  d: `M ${round(cx + side * 7)} ${round(startY)} C ${round(cx + side * spread * 0.34)} ${round(startY + 12)}, ${round(cx + side * spread * 0.7)} ${round(endY - 12)}, ${round(cx + side * spread)} ${round(endY)}`,
-                  width: Math.max(1.5, 3.6 - step * 0.42),
-                  opacity: Math.max(0.28, 0.62 - step * 0.05),
+                  d: ribbonPath(
+                    { x: startX, y: startY },
+                    c1,
+                    c2,
+                    { x: endX, y: endY },
+                    baseWidth,
+                  ),
+                  width: baseWidth,
+                }
+              })
+
+              const tendrils = [-1, -0.5, 0.5, 1].map((offset, index) => {
+                const startX = cx + offset * 24
+                const startY = bottom - 12
+                const endX = cx + offset * 182
+                const endY = bottom + 26 + (index % 2) * 9
+                return {
+                  d: `M ${round(startX)} ${round(startY)} C ${round(cx + offset * 80)} ${round(bottom + 2)}, ${round(cx + offset * 138)} ${round(bottom + 14)}, ${round(endX)} ${round(endY)}`,
+                  width: 1.3 + (index % 2) * 0.5,
+                  opacity: 0.42 + (index % 2) * 0.12,
                 }
               })
 
@@ -331,15 +517,32 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
                       <stop offset="88%" className="trunk-stop-edge" />
                       <stop offset="100%" className="trunk-stop-edge" />
                     </linearGradient>
+                    <linearGradient
+                      id="trunk-root-wood"
+                      gradientUnits="userSpaceOnUse"
+                      x1={cx - 175}
+                      y1={0}
+                      x2={cx + 175}
+                      y2={0}
+                    >
+                      <stop offset="0%" className="trunk-stop-edge" />
+                      <stop offset="28%" className="trunk-stop-mid" />
+                      <stop offset="50%" className="trunk-stop-light" />
+                      <stop offset="72%" className="trunk-stop-mid" />
+                      <stop offset="100%" className="trunk-stop-edge" />
+                    </linearGradient>
                   </defs>
                   <g className="trunk-roots">
-                    {roots.map((root, index) => (
+                    {tendrils.map((tendril, index) => (
                       <path
-                        key={`root-${index}`}
+                        key={`tendril-${index}`}
                         className="root-lines"
-                        d={root.d}
-                        style={{ strokeWidth: root.width, opacity: root.opacity }}
+                        d={tendril.d}
+                        style={{ strokeWidth: tendril.width, opacity: tendril.opacity }}
                       />
+                    ))}
+                    {roots.map((root, index) => (
+                      <path key={`root-${index}`} className="trunk-root" d={root.d} />
                     ))}
                   </g>
                   <path className="trunk-wood" d={smoothPath(outline, true)} />
@@ -391,7 +594,7 @@ export function TreeCanvas({ data, selectedId, focusRequest, onSelect }: TreeCan
                 }}
                 title={`${pet.name}`}
               >
-                <span aria-hidden="true">🐾 </span>
+                <LeafIcon size={13} />
                 <span>{pet.name}</span>
               </div>
             )

@@ -4,6 +4,7 @@ import { fullName, lifeSpan, petLifeSpan, petSpeciesLabel, type Person } from '.
 import {
   ChevronRightIcon,
   HeartIcon,
+  LeafIcon,
   LinkIcon,
   PencilIcon,
   PlusIcon,
@@ -216,8 +217,8 @@ export function PersonPanel({
               {pets.map((pet) => (
                 <li key={pet.id} className="relation-item">
                   <div className="relation-main">
-                    <span className="mini-avatar sex-pending">
-                      {pet.photo ? <img src={pet.photo} alt="" /> : <span>{pet.name.charAt(0).toUpperCase()}</span>}
+                    <span className="mini-avatar pet-avatar">
+                      {pet.photo ? <img src={pet.photo} alt="" /> : <LeafIcon size={16} />}
                     </span>
                     <span className="relation-info">
                       <span className="relation-name">{pet.name}</span>

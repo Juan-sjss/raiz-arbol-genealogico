@@ -266,6 +266,85 @@ export function layoutTree(people: Person[], relationships: Relationship[]): Tre
     for (let row = 0; row < maxRow; row++) alignTo(rows[row], childUnitsOf)
   }
 
+  // 5. Corredor central para el tronco. Las tarjetas (hojas) que caen sobre
+  //    la franja del tronco se desplazan hacia los lados para no taparlo.
+  //    Los hijos de una fila se empujan en cadena para no solaparse.
+  const rowsOfCards: Array<Array<{ id: string; x: number }>> = Array.from(
+    { length: maxRow + 1 },
+    () => [],
+  )
+  for (const unit of units.values()) {
+    unit.members.forEach((memberId, index) => {
+      rowsOfCards[unit.row].push({
+        id: memberId,
+        x: unit.x + index * (CARD_W + PARTNER_GAP),
+      })
+    })
+  }
+  for (const row of rowsOfCards) row.sort((a, b) => a.x - b.x)
+
+  const TRUNK_CLEAR_HALF = 74
+  const CARD_GAP_MIN = 16
+  const topRow = rowsOfCards[0]
+  const trunkCx = topRow.length
+    ? topRow.reduce((sum, card) => sum + card.x + CARD_W / 2, 0) / topRow.length
+    : 0
+  const corridorLeft = trunkCx - TRUNK_CLEAR_HALF
+  const corridorRight = trunkCx + TRUNK_CLEAR_HALF
+
+  const pushLeft = (row: Array<{ x: number }>, index: number, targetX: number) => {
+    if (row[index].x <= targetX) return
+    row[index].x = targetX
+    let limit = targetX
+    for (let i = index - 1; i >= 0; i--) {
+      const maxX = limit - CARD_GAP_MIN - CARD_W
+      if (row[i].x <= maxX) break
+      row[i].x = maxX
+      limit = maxX
+    }
+  }
+
+  const pushRight = (row: Array<{ x: number }>, index: number, targetX: number) => {
+    if (row[index].x >= targetX) return
+    row[index].x = targetX
+    let limit = targetX + CARD_W
+    for (let i = index + 1; i < row.length; i++) {
+      const minX = limit + CARD_GAP_MIN
+      if (row[i].x >= minX) break
+      row[i].x = minX
+      limit = minX + CARD_W
+    }
+  }
+
+  // La primera fila queda por encima del nacimiento del tronco, así que solo
+  // apartamos las filas siguientes.
+  for (let rowIndex = 1; rowIndex < rowsOfCards.length; rowIndex++) {
+    const row = rowsOfCards[rowIndex]
+    for (let index = 0; index < row.length; index++) {
+      const card = row[index]
+      const right = card.x + CARD_W
+      if (right <= corridorLeft || card.x >= corridorRight) continue
+
+      const leftShift = right - corridorLeft
+      const rightShift = corridorRight - card.x
+      let side: -1 | 1
+      if (leftShift < rightShift - 0.5) {
+        side = -1
+      } else if (rightShift < leftShift - 0.5) {
+        side = 1
+      } else {
+        const previous = row[index - 1]
+        const next = row[index + 1]
+        const spaceLeft = previous ? card.x - (previous.x + CARD_W) : Number.POSITIVE_INFINITY
+        const spaceRight = next ? next.x - right : Number.POSITIVE_INFINITY
+        side = spaceRight >= spaceLeft ? 1 : -1
+      }
+
+      if (side === -1) pushLeft(row, index, corridorLeft - CARD_W)
+      else pushRight(row, index, corridorRight)
+    }
+  }
+
   // Centrar el dibujo completo y calcular el tamaño del lienzo.
   const positions = new Map<string, Placement>()
   let minX = Infinity
@@ -273,17 +352,16 @@ export function layoutTree(people: Person[], relationships: Relationship[]): Tre
   let maxX = -Infinity
   let maxY = -Infinity
 
-  for (const unit of units.values()) {
-    const y = unit.row * (CARD_H + GAP_Y)
-    unit.members.forEach((memberId, index) => {
-      const x = unit.x + index * (CARD_W + PARTNER_GAP)
-      positions.set(memberId, { x, y })
-      minX = Math.min(minX, x)
+  rowsOfCards.forEach((row, rowIndex) => {
+    const y = rowIndex * (CARD_H + GAP_Y)
+    for (const card of row) {
+      positions.set(card.id, { x: card.x, y })
+      minX = Math.min(minX, card.x)
       minY = Math.min(minY, y)
-      maxX = Math.max(maxX, x + CARD_W)
+      maxX = Math.max(maxX, card.x + CARD_W)
       maxY = Math.max(maxY, y + CARD_H)
-    })
-  }
+    }
+  })
 
   for (const [id, placement] of positions) {
     positions.set(id, {
