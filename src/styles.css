@@ -20,6 +20,10 @@
   --accent-female-deep: #a8642a;
   --branch: #6b4426;
   --branch-deep: #4a2d18;
+  --trunk-edge: #3a2210;
+  --trunk-mid: #6b4426;
+  --trunk-light: #a5764a;
+  --trunk-bark: #301c0d;
   --leaf-h: 100;
   --leaf-s: 48%;
   --leaf-l: 38%;
@@ -54,6 +58,10 @@
   --accent-female-deep: #f0c385;
   --branch: #c49a6b;
   --branch-deep: #e2bd8f;
+  --trunk-edge: #7d5327;
+  --trunk-mid: #c49a6b;
+  --trunk-light: #efd2a6;
+  --trunk-bark: #6b4520;
   --pet: #a8845a;
   --gold: #d9a85a;
   --danger: #e58a78;
@@ -345,35 +353,52 @@ ul {
 
 .root-lines {
   fill: none;
-  stroke: var(--branch-deep);
+  stroke: var(--trunk-bark);
   stroke-width: 2.4;
   stroke-linecap: round;
   opacity: 0.6;
 }
 
-.trunk-segment {
-  fill: var(--branch);
-  stroke: var(--branch-deep);
-  stroke-width: 3;
-  stroke-linecap: round;
+.trunk-wood {
+  fill: url(#trunk-wood);
+  stroke: color-mix(in srgb, var(--trunk-edge) 82%, #000 18%);
+  stroke-width: 1.4;
   stroke-linejoin: round;
-  opacity: 0.98;
-  filter: drop-shadow(0 3px 8px rgba(42, 33, 22, 0.25));
+  filter: drop-shadow(0 4px 10px rgba(42, 33, 22, 0.28));
 }
 
-.trunk-grain {
+.trunk-stop-edge {
+  stop-color: var(--trunk-edge);
+}
+
+.trunk-stop-mid {
+  stop-color: var(--trunk-mid);
+}
+
+.trunk-stop-light {
+  stop-color: var(--trunk-light);
+}
+
+.trunk-groove {
   fill: none;
-  stroke: color-mix(in srgb, var(--branch-deep) 70%, #000 30%);
-  stroke-width: 1.1;
+  stroke: var(--trunk-bark);
   stroke-linecap: round;
-  opacity: 0.55;
 }
 
-.trunk-knot {
-  fill: var(--branch-deep);
-  stroke: var(--branch);
-  stroke-width: 0.8;
-  opacity: 0.85;
+.trunk-highlight {
+  fill: none;
+  stroke: color-mix(in srgb, var(--trunk-light) 70%, #fff 30%);
+  stroke-width: 9;
+  stroke-linecap: round;
+  opacity: 0.2;
+}
+
+.trunk-shade {
+  fill: none;
+  stroke: var(--trunk-edge);
+  stroke-width: 13;
+  stroke-linecap: round;
+  opacity: 0.16;
 }
 
 .edge-partner {
