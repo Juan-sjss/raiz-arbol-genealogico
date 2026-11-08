@@ -166,6 +166,13 @@ export const TreeIcon = (p: IconProps) => (
   </Icon>
 )
 
+export const LeafIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M20.5 3.5C11.4 4 5.5 8.2 5.5 15a5.8 5.8 0 0 0 5.8 5.8c6.8 0 9.2-6.6 9.2-17.3Z" />
+    <path d="M3.5 21c2.6-6 7.4-10.4 13-12.8" />
+  </Icon>
+)
+
 export const MoonIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M20 14.5A8 8 0 0 1 9.5 4a8.2 8.2 0 1 0 10.5 10.5Z" />

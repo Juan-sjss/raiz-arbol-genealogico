@@ -30,6 +30,8 @@
   --leaf-h2: 32;
   --leaf-s2: 62%;
   --leaf-l2: 42%;
+  --blossom: #e8a7bd;
+  --blossom-deep: #b9627f;
   --pet: #7a5a3a;
   --gold: #c9944a;
   --danger: #a34434;
@@ -62,6 +64,8 @@
   --trunk-mid: #c49a6b;
   --trunk-light: #efd2a6;
   --trunk-bark: #6b4520;
+  --blossom: #e0a3bc;
+  --blossom-deep: #c37b96;
   --pet: #a8845a;
   --gold: #d9a85a;
   --danger: #e58a78;
@@ -349,6 +353,35 @@ ul {
   stroke: var(--accent-deep);
   stroke-width: 0.6;
   opacity: 0.95;
+}
+
+.edge-leaf-vein {
+  fill: none;
+  stroke: var(--accent-deep);
+  stroke-width: 0.7;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+
+.branch-flower-petal {
+  fill: var(--blossom);
+  stroke: var(--blossom-deep);
+  stroke-width: 0.55;
+  opacity: 0.96;
+}
+
+.branch-flower-center {
+  fill: var(--gold);
+  stroke: color-mix(in srgb, var(--blossom-deep) 70%, #000 30%);
+  stroke-width: 0.4;
+}
+
+.trunk-root {
+  fill: url(#trunk-root-wood);
+  stroke: color-mix(in srgb, var(--trunk-edge) 80%, #000 20%);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 3px 6px rgba(42, 33, 22, 0.24));
 }
 
 .root-lines {
@@ -1868,7 +1901,9 @@ ul {
 
 /* Mascotas y sexo pendiente (refactor de datos) */
 .sex-pending { background: var(--bg-deep); color: var(--ink-soft); }
-.pet-badge { position: absolute; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--ink-soft); font-size: 11px; white-space: nowrap; pointer-events: none; z-index: 2; }
+.pet-badge { position: absolute; display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px 2px 7px; border-radius: 999px 14px 999px 14px; background: color-mix(in srgb, var(--accent-soft) 82%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--line)); color: var(--accent-deep); font-size: 11px; font-weight: 600; letter-spacing: 0.15px; white-space: nowrap; pointer-events: none; z-index: 2; box-shadow: var(--shadow-soft); }
+.pet-badge svg { flex: none; opacity: 0.85; }
+.pet-avatar { background: color-mix(in srgb, var(--accent-soft) 82%, var(--surface)); color: var(--accent-deep); }
 .pet-section { margin: 8px 0 12px; padding: 10px 12px; border: 1px dashed var(--line-strong); border-radius: var(--radius); background: var(--accent-soft); }
 @keyframes leaf-in {
   from { opacity: 0; }
